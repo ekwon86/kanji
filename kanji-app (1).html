@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字道 — Kanji Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Noto+Serif+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ai: #1a3a5c; --ai-deep: #0f2440; --shu: #c93f2e; --kinari: #f4ede0;
+    --washi: #f9f4e8; --sumi: #1a1614; --hai: #8a8275; --gold: #b8924a;
+    --moss: #4a7c4e; --line: rgba(26, 22, 20, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--washi); color: var(--sumi); font-family: 'Noto Serif JP', 'Shippori Mincho', serif; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 20% 30%, rgba(184, 146, 74, 0.04) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(26, 58, 92, 0.03) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+  body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.07 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); opacity: 0.4; mix-blend-mode: multiply; pointer-events: none; z-index: 1; }
+
+  .app { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: 32px 28px 80px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 22px; border-bottom: 1px solid var(--line); margin-bottom: 36px; }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand-kanji { font-family: 'Shippori Mincho', serif; font-weight: 700; font-size: 38px; color: var(--ai-deep); letter-spacing: 0.04em; line-height: 1; }
+  .brand-mark { width: 8px; height: 8px; background: var(--shu); transform: rotate(45deg); display: inline-block; }
+  .brand-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--hai); }
+  .progress-meta { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.18em; color: var(--hai); text-transform: uppercase; }
+  .progress-meta .num { color: var(--ai-deep); font-weight: 500; }
+  .progress-meta .due-now { color: var(--shu); }
+
+  .modes { display: flex; gap: 0; margin-bottom: 32px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .mode-btn { background: none; border: none; padding: 14px 22px 14px 0; margin-right: 28px; font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--hai); cursor: pointer; position: relative; letter-spacing: 0.02em; transition: color 0.2s; }
+  .mode-btn .mode-kanji { font-size: 18px; margin-right: 8px; color: var(--ai-deep); opacity: 0.45; transition: opacity 0.2s; }
+  .mode-btn:hover { color: var(--sumi); }
+  .mode-btn:hover .mode-kanji { opacity: 0.8; }
+  .mode-btn.active { color: var(--sumi); }
+  .mode-btn.active .mode-kanji { opacity: 1; color: var(--shu); }
+  .mode-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 28px; height: 2px; background: var(--shu); }
+  .mode-btn .badge { display: inline-block; margin-left: 6px; padding: 1px 7px; background: var(--shu); color: var(--washi); font-family: 'JetBrains Mono', monospace; font-size: 9px; border-radius: 8px; vertical-align: 1px; }
+  .mode-btn .badge.zero { display: none; }
+
+  .stage { display: grid; grid-template-columns: 1fr 320px; gap: 48px; align-items: start; }
+  @media (max-width: 880px) { .stage { grid-template-columns: 1fr; } .sidebar { order: -1; } }
+
+  .card { background: var(--kinari); border: 1px solid var(--line); padding: 0; position: relative; min-height: 540px; box-shadow: 0 1px 0 rgba(26, 22, 20, 0.04), 0 24px 60px -30px rgba(15, 36, 64, 0.25); }
+  .card::before { content: ''; position: absolute; top: 14px; left: 14px; right: 14px; bottom: 14px; border: 1px solid rgba(26, 58, 92, 0.18); pointer-events: none; }
+  .card-corner { position: absolute; width: 22px; height: 22px; border-color: var(--shu); }
+  .card-corner.tl { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; }
+  .card-corner.tr { top: 8px; right: 8px; border-top: 2px solid; border-right: 2px solid; }
+  .card-corner.bl { bottom: 8px; left: 8px; border-bottom: 2px solid; border-left: 2px solid; }
+  .card-corner.br { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; }
+  .card-inner { padding: 56px 56px 40px; position: relative; }
+
+  .card-header { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--hai); margin-bottom: 32px; flex-wrap: wrap; gap: 8px; }
+  .card-header .level { color: var(--shu); font-weight: 500; }
+  .card-header .srs-stage { color: var(--ai-deep); }
+
+  .kanji-display { text-align: center; padding: 16px 0 24px; }
+  .kanji-glyph { font-family: 'Shippori Mincho', serif; font-weight: 600; font-size: 200px; line-height: 1; color: var(--sumi); letter-spacing: -0.02em; display: inline-block; }
+  .kanji-readings { margin-top: 24px; display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; }
+  .reading-row { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .reading-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--hai); }
+  .reading-value { font-size: 15px; color: var(--ai-deep); letter-spacing: 0.08em; }
+  .reading-value.on { color: var(--shu); }
+
+  .meaning { margin-top: 28px; padding: 20px 24px; background: rgba(26, 58, 92, 0.04); border-left: 2px solid var(--ai-deep); text-align: center; }
+  .meaning-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--hai); margin-bottom: 6px; }
+  .meaning-value { font-family: 'Shippori Mincho', serif; font-size: 22px; color: var(--sumi); font-weight: 500; }
+
+  .front-prompt { margin-top: 36px; text-align: center; font-family: 'Shippori Mincho', serif; font-style: italic; color: var(--hai); font-size: 14px; letter-spacing: 0.06em; }
+  .reveal-btn { display: block; margin: 32px auto 0; padding: 14px 44px; background: var(--ai-deep); color: var(--washi); border: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .reveal-btn:hover { background: var(--sumi); }
+
+  .rating { display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 36px; row-gap: 14px; }
+  .rating.show { display: grid; }
+  .rate-btn { padding: 14px 8px; background: transparent; border: 1px solid var(--line); cursor: pointer; transition: all 0.2s; font-family: 'Shippori Mincho', serif; text-align: center; }
+  .rate-btn:hover { background: var(--washi); transform: translateY(-2px); }
+  .rate-btn .rate-label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--hai); margin-bottom: 6px; }
+  .rate-btn .rate-val { font-size: 12px; color: var(--sumi); display: block; margin-bottom: 6px; font-family: 'Noto Serif JP', serif; line-height: 1.3; }
+  .rate-btn .rate-next { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--hai); display: block; letter-spacing: 0.05em; }
+  .rate-btn[data-rate="again"]:hover { border-color: var(--shu); } .rate-btn[data-rate="again"]:hover .rate-val { color: var(--shu); }
+  .rate-btn[data-rate="hard"]:hover { border-color: var(--gold); } .rate-btn[data-rate="hard"]:hover .rate-val { color: var(--gold); }
+  .rate-btn[data-rate="good"]:hover { border-color: var(--ai-deep); } .rate-btn[data-rate="good"]:hover .rate-val { color: var(--ai-deep); }
+  .rate-btn[data-rate="easy"]:hover { border-color: var(--moss); } .rate-btn[data-rate="easy"]:hover .rate-val { color: var(--moss); }
+
+  .sidebar { display: flex; flex-direction: column; gap: 24px; }
+  .panel { background: var(--kinari); border: 1px solid var(--line); padding: 22px 24px; }
+  .panel-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--hai); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .panel-title::before { content: ''; width: 14px; height: 1px; background: var(--shu); }
+  .components { display: flex; flex-direction: column; gap: 12px; }
+  .component { display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: var(--washi); border-left: 2px solid var(--ai-deep); }
+  .component-kanji { font-family: 'Shippori Mincho', serif; font-size: 28px; color: var(--ai-deep); line-height: 1; min-width: 32px; text-align: center; }
+  .component-info { display: flex; flex-direction: column; gap: 2px; }
+  .component-meaning { font-size: 14px; color: var(--sumi); }
+  .component-reading { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--hai); letter-spacing: 0.1em; }
+  .mnemonic-text { font-family: 'Noto Serif JP', serif; font-size: 13.5px; line-height: 1.65; color: var(--sumi); font-style: italic; }
+  .mnemonic-text .key { font-style: normal; color: var(--shu); font-weight: 500; }
+  .vocab-list { display: flex; flex-direction: column; gap: 10px; }
+  .vocab { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .vocab:last-child { border-bottom: none; }
+  .vocab-word { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--sumi); margin-bottom: 2px; }
+  .vocab-reading { font-size: 12px; color: var(--ai-deep); margin-bottom: 2px; }
+  .vocab-meaning { font-size: 12px; color: var(--hai); }
+  .sidebar.locked .panel { opacity: 0.18; filter: blur(3px); pointer-events: none; transition: all 0.3s; }
+
+  .srs-info { padding: 10px 14px; background: rgba(184, 146, 74, 0.08); border-left: 2px solid var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--hai); letter-spacing: 0.06em; margin-bottom: 24px; line-height: 1.6; }
+  .srs-info .label { color: var(--gold); margin-right: 8px; }
+
+  .browse-controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; background: transparent; border: 1px solid var(--line); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--hai); cursor: pointer; transition: all 0.2s; }
+  .filter-btn:hover { color: var(--sumi); border-color: var(--ai-deep); }
+  .filter-btn.active { background: var(--ai-deep); color: var(--washi); border-color: var(--ai-deep); }
+  .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+  .browse-card { background: var(--kinari); border: 1px solid var(--line); padding: 24px 16px 18px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .browse-card:hover { border-color: var(--ai-deep); transform: translateY(-2px); box-shadow: 0 8px 24px -8px rgba(15, 36, 64, 0.2); }
+  .browse-card .bk-glyph { font-family: 'Shippori Mincho', serif; font-size: 56px; color: var(--sumi); line-height: 1; margin-bottom: 12px; display: block; }
+  .browse-card .bk-mean { font-family: 'Shippori Mincho', serif; font-size: 13px; color: var(--sumi); margin-bottom: 2px; }
+  .browse-card .bk-read { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--hai); letter-spacing: 0.12em; }
+  .browse-card .bk-tier { position: absolute; top: 8px; right: 8px; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: var(--shu); background: rgba(201, 63, 46, 0.08); padding: 2px 6px; }
+  .browse-card .bk-srs { position: absolute; top: 8px; left: 8px; width: 8px; height: 8px; border-radius: 50%; }
+  .bk-srs.s0 { background: rgba(26, 22, 20, 0.15); }
+  .bk-srs.s1 { background: var(--shu); }
+  .bk-srs.s2 { background: var(--gold); }
+  .bk-srs.s3 { background: var(--ai-deep); }
+  .bk-srs.s4 { background: var(--moss); }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; margin-bottom: 32px; }
+  .stat-card { background: var(--kinari); border: 1px solid var(--line); padding: 24px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--shu); }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--hai); margin-bottom: 12px; }
+  .stat-num { font-family: 'Shippori Mincho', serif; font-size: 42px; color: var(--ai-deep); line-height: 1; font-weight: 600; }
+  .stat-sub { font-size: 12px; color: var(--hai); margin-top: 8px; }
+  .level-breakdown { background: var(--kinari); border: 1px solid var(--line); padding: 28px; margin-bottom: 24px; }
+  .level-row { display: grid; grid-template-columns: 80px 1fr 60px; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .level-row:last-child { border-bottom: none; }
+  .level-name { font-family: 'Shippori Mincho', serif; font-size: 14px; color: var(--ai-deep); }
+  .level-bar { height: 6px; background: rgba(26, 22, 20, 0.06); position: relative; overflow: hidden; }
+  .level-bar-fill { position: absolute; inset: 0; background: linear-gradient(90deg, var(--ai-deep), var(--shu)); transform-origin: left; }
+  .level-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--hai); text-align: right; }
+
+  .srs-stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; background: var(--kinari); border: 1px solid var(--line); padding: 24px; }
+  .srs-stage-card { text-align: center; padding: 16px 8px; background: var(--washi); border-top: 3px solid; }
+  .srs-stage-card.s0 { border-color: rgba(26, 22, 20, 0.3); }
+  .srs-stage-card.s1 { border-color: var(--shu); }
+  .srs-stage-card.s2 { border-color: var(--gold); }
+  .srs-stage-card.s3 { border-color: var(--ai-deep); }
+  .srs-stage-card.s4 { border-color: var(--moss); }
+  .srs-stage-card .ss-name { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--hai); margin-bottom: 8px; }
+  .srs-stage-card .ss-count { font-family: 'Shippori Mincho', serif; font-size: 28px; color: var(--sumi); font-weight: 600; line-height: 1; }
+  .srs-stage-card .ss-int { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--hai); margin-top: 6px; letter-spacing: 0.1em; }
+
+  .vert-mark { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; font-family: 'Shippori Mincho', serif; font-size: 11px; letter-spacing: 0.6em; color: var(--hai); opacity: 0.5; z-index: 0; pointer-events: none; }
+  @media (max-width: 1280px) { .vert-mark { display: none; } }
+
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .write-stage { display: grid; grid-template-columns: 1fr 360px; gap: 32px; align-items: start; }
+  @media (max-width: 880px) { .write-stage { grid-template-columns: 1fr; } }
+  .write-canvas-wrap { background: var(--kinari); border: 1px solid var(--line); padding: 32px; box-shadow: 0 1px 0 rgba(26, 22, 20, 0.04), 0 24px 60px -30px rgba(15, 36, 64, 0.25); }
+  .write-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .write-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--hai); }
+  .write-target { font-family: 'Shippori Mincho', serif; font-size: 16px; color: var(--sumi); }
+  .write-target .tg-kanji { color: var(--shu); font-size: 22px; margin-right: 8px; vertical-align: -2px; }
+  .canvas-frame { position: relative; width: 100%; aspect-ratio: 1; max-width: 480px; margin: 0 auto; background: var(--washi); border: 1px solid var(--line); }
+  .canvas-frame::before, .canvas-frame::after { content: ''; position: absolute; background: rgba(201, 63, 46, 0.15); }
+  .canvas-frame::before { left: 50%; top: 0; width: 1px; height: 100%; transform: translateX(-50%); }
+  .canvas-frame::after { top: 50%; left: 0; height: 1px; width: 100%; transform: translateY(-50%); }
+  .ghost-kanji { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Shippori Mincho', serif; font-size: 360px; color: rgba(26, 22, 20, 0.08); line-height: 1; pointer-events: none; user-select: none; }
+  @media (max-width: 600px) { .ghost-kanji { font-size: 240px; } }
+  .write-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+  .write-controls { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  .wc-btn { padding: 10px 18px; background: transparent; border: 1px solid var(--line); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sumi); cursor: pointer; transition: all 0.2s; }
+  .wc-btn:hover { background: var(--washi); border-color: var(--ai-deep); }
+  .wc-btn.primary { background: var(--ai-deep); color: var(--washi); border-color: var(--ai-deep); }
+  .wc-btn.primary:hover { background: var(--sumi); }
+  .wc-btn.danger:hover { border-color: var(--shu); color: var(--shu); }
+  .write-info { display: flex; flex-direction: column; gap: 24px; }
+  .write-meta { background: var(--kinari); border: 1px solid var(--line); padding: 24px; }
+  .write-meta .meta-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .write-meta .meta-row:last-child { border-bottom: none; }
+  .write-meta .meta-key { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--hai); }
+  .write-meta .meta-val { color: var(--sumi); font-family: 'Shippori Mincho', serif; }
+  .write-tip { background: rgba(26, 58, 92, 0.04); border-left: 2px solid var(--ai-deep); padding: 18px 22px; font-size: 13px; line-height: 1.6; color: var(--sumi); }
+  .write-tip strong { color: var(--ai-deep); font-weight: 600; }
+  .write-tip-list { padding-left: 18px; margin-top: 8px; }
+  .write-tip-list li { margin-bottom: 6px; }
+
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: var(--hai); }
+  .empty-state .ek { font-family: 'Shippori Mincho', serif; font-size: 80px; color: var(--ai-deep); opacity: 0.3; margin-bottom: 16px; }
+  .empty-state .et { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--sumi); margin-bottom: 8px; }
+  .empty-state .es { font-size: 13px; }
+  .session-done { text-align: center; padding: 100px 20px; }
+  .session-done .sd-kanji { font-family: 'Shippori Mincho', serif; font-size: 120px; color: var(--shu); line-height: 1; margin-bottom: 24px; }
+  .session-done .sd-title { font-family: 'Shippori Mincho', serif; font-size: 28px; color: var(--sumi); margin-bottom: 12px; }
+  .session-done .sd-sub { color: var(--hai); font-size: 14px; margin-bottom: 32px; }
+  .restart-btn { padding: 14px 36px; background: var(--shu); color: var(--washi); border: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; cursor: pointer; }
+  .restart-btn:hover { background: var(--ai-deep); }
+
+  .kbd { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color: var(--hai); background: var(--washi); margin-left: 6px; vertical-align: middle; }
+  @media (max-width: 600px) {
+    .card-inner { padding: 36px 24px 28px; }
+    .kanji-glyph { font-size: 140px; }
+    .brand-kanji { font-size: 28px; }
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .progress-meta { text-align: left; }
+  }
+
+  /* MODE TOGGLE */
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .mt-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 10px 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: 'Shippori Mincho', serif;
+  }
+  .mt-btn:hover { border-color: var(--ai-deep); background: var(--washi); }
+  .mt-btn.active {
+    background: var(--ai-deep);
+    border-color: var(--ai-deep);
+  }
+  .mt-btn.active .mt-label { color: var(--washi); }
+  .mt-btn.active .mt-sub { color: rgba(249, 244, 232, 0.6); }
+  .mt-btn .mt-label {
+    display: block;
+    font-size: 14px;
+    color: var(--sumi);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .mt-btn .mt-sub {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--hai);
+    text-transform: uppercase;
+  }
+
+  /* QUIZ */
+  .quiz-prompt {
+    text-align: center;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 16px;
+    color: var(--sumi);
+    margin: 16px 0 24px;
+    letter-spacing: 0.02em;
+  }
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  @media (max-width: 480px) {
+    .quiz-options { grid-template-columns: 1fr; }
+  }
+  .quiz-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--washi);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-family: 'Noto Serif JP', serif;
+    min-height: 60px;
+  }
+  .quiz-btn:hover:not(.disabled) {
+    border-color: var(--ai-deep);
+    background: var(--kinari);
+    transform: translateY(-1px);
+  }
+  .quiz-btn.disabled { cursor: default; }
+  .quiz-btn .qb-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--hai);
+    background: rgba(26, 22, 20, 0.06);
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .quiz-btn .qb-text {
+    font-size: 15px;
+    color: var(--sumi);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .quiz-btn.correct {
+    background: rgba(74, 124, 78, 0.12);
+    border-color: var(--moss);
+  }
+  .quiz-btn.correct .qb-num { background: var(--moss); color: var(--washi); }
+  .quiz-btn.correct .qb-text { color: var(--moss); font-weight: 500; }
+  .quiz-btn.wrong {
+    background: rgba(201, 63, 46, 0.08);
+    border-color: var(--shu);
+  }
+  .quiz-btn.wrong .qb-num { background: var(--shu); color: var(--washi); }
+  .quiz-btn.wrong .qb-text { color: var(--shu); text-decoration: line-through; text-decoration-color: rgba(201, 63, 46, 0.4); }
+
+  .quiz-feedback {
+    margin-top: 28px;
+    padding: 20px 24px;
+    background: rgba(26, 58, 92, 0.04);
+    border-left: 2px solid var(--ai-deep);
+  }
+  .fb-status {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    letter-spacing: 0.04em;
+  }
+  .fb-status.ok { color: var(--moss); }
+  .fb-status.no { color: var(--shu); }
+  .fb-info { display: flex; flex-direction: column; gap: 6px; }
+  .fb-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13px;
+  }
+  .fb-row:last-child { border-bottom: none; }
+  .fb-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--hai);
+  }
+  .fb-val {
+    font-family: 'Shippori Mincho', serif;
+    color: var(--sumi);
+  }
+  .fb-val.on { color: var(--shu); }
+</style>
+</head>
+<body>
+
+<div class="vert-mark">継 続 は 力 な り</div>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-kanji">漢字道</span>
+      <span class="brand-text">Kanji · Study · Session</span>
+    </div>
+    <div class="progress-meta">
+      <div>Due now · <span class="num due-now" id="dueCount">0</span></div>
+      <div>Reviewed today · <span class="num" id="todayCount">0</span></div>
+      <div>Streak · <span class="num" id="streakCount">1</span> day(s)</div>
+    </div>
+  </header>
+
+  <nav class="modes">
+    <button class="mode-btn active" data-view="study"><span class="mode-kanji">習</span>Study<span class="badge zero" id="dueBadge">0</span></button>
+    <button class="mode-btn" data-view="write"><span class="mode-kanji">書</span>Write</button>
+    <button class="mode-btn" data-view="browse"><span class="mode-kanji">巻</span>Browse</button>
+    <button class="mode-btn" data-view="stats"><span class="mode-kanji">録</span>Progress</button>
+  </nav>
+
+  <main class="view active" id="view-study">
+    <div class="stage">
+      <section class="card">
+        <span class="card-corner tl"></span><span class="card-corner tr"></span>
+        <span class="card-corner bl"></span><span class="card-corner br"></span>
+        <div class="card-inner" id="studyCardInner"></div>
+      </section>
+      <aside class="sidebar locked" id="sidebar">
+        <div class="panel">
+          <div class="panel-title">SRS Stage · 段階</div>
+          <div class="srs-info">
+            <span class="label">STAGE</span><span id="srsStageLabel">New</span><br>
+            <span class="label">NEXT</span><span id="srsNextLabel">—</span>
+          </div>
+          <div class="panel-title">Components · 部首</div>
+          <div class="components" id="componentsList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Mnemonic · 覚え方</div>
+          <div class="mnemonic-text" id="mnemonicText"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Vocabulary · 語彙</div>
+          <div class="vocab-list" id="vocabList"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <main class="view" id="view-write">
+    <div class="write-stage">
+      <div class="write-canvas-wrap">
+        <div class="write-header">
+          <div class="write-title">Stroke Practice · 書写</div>
+          <div class="write-target"><span class="tg-kanji" id="writeTargetKanji">日</span><span id="writeTargetMean">sun, day</span></div>
+        </div>
+        <div class="canvas-frame">
+          <div class="ghost-kanji" id="ghostKanji">日</div>
+          <canvas class="write-canvas" id="writeCanvas"></canvas>
+        </div>
+        <div class="write-controls">
+          <button class="wc-btn" id="toggleGhost">Hide Ghost</button>
+          <button class="wc-btn danger" id="clearCanvas">Clear <span class="kbd">C</span></button>
+          <button class="wc-btn" id="prevKanji">← Prev</button>
+          <button class="wc-btn primary" id="nextKanji">Next →</button>
+        </div>
+      </div>
+      <div class="write-info">
+        <div class="write-meta">
+          <div class="meta-row"><span class="meta-key">Kanji</span><span class="meta-val" id="wmKanji">日</span></div>
+          <div class="meta-row"><span class="meta-key">Meaning</span><span class="meta-val" id="wmMean">sun, day</span></div>
+          <div class="meta-row"><span class="meta-key">On'yomi</span><span class="meta-val" id="wmOn">ニチ・ジツ</span></div>
+          <div class="meta-row"><span class="meta-key">Kun'yomi</span><span class="meta-val" id="wmKun">ひ・か</span></div>
+          <div class="meta-row"><span class="meta-key">Strokes</span><span class="meta-val" id="wmStrokes">4</span></div>
+          <div class="meta-row"><span class="meta-key">JLPT</span><span class="meta-val" id="wmLevel">N5</span></div>
+        </div>
+        <div class="write-tip">
+          <strong>Stroke order principles:</strong>
+          <ul class="write-tip-list">
+            <li>Top to bottom, left to right</li>
+            <li>Horizontal before vertical when they cross</li>
+            <li>Outside enclosures before inside contents</li>
+            <li>Center stroke before flanking strokes (in symmetric shapes)</li>
+            <li>Bottom-closing horizontals come last</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main class="view" id="view-browse">
+    <div class="browse-controls" id="browseControls">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="N5">N5</button>
+      <button class="filter-btn" data-filter="N4">N4</button>
+      <button class="filter-btn" data-filter="N3">N3</button>
+      <button class="filter-btn" data-filter="due">Due Now</button>
+      <button class="filter-btn" data-filter="new">New</button>
+      <button class="filter-btn" data-filter="known">Known</button>
+    </div>
+    <div class="browse-grid" id="browseGrid"></div>
+  </main>
+
+  <main class="view" id="view-stats">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Reviews</div><div class="stat-num" id="statTotal">0</div><div class="stat-sub">across all sessions</div></div>
+      <div class="stat-card"><div class="stat-label">Known</div><div class="stat-num" id="statMastered">0</div><div class="stat-sub">stage 3+ in SRS</div></div>
+      <div class="stat-card"><div class="stat-label">Due Now</div><div class="stat-num" id="statDue">0</div><div class="stat-sub">waiting for review</div></div>
+      <div class="stat-card"><div class="stat-label">Accuracy</div><div class="stat-num" id="statAccuracy">—</div><div class="stat-sub">good + easy / total</div></div>
+    </div>
+    <div class="level-breakdown">
+      <div class="panel-title" style="margin-bottom: 20px;">By JLPT Level · 段位別</div>
+      <div id="levelBreakdown"></div>
+    </div>
+    <div class="panel-title" style="margin-bottom: 14px; padding-left: 4px;">SRS Stage Distribution · 段階分布</div>
+    <div class="srs-stages" id="srsStages"></div>
+  </main>
+
+</div>
+
+<script>
+const KANJI = [
+  { char: '一', meaning: 'one', on: 'イチ・イツ', kun: 'ひと-', level: 'N5', strokes: 1,
+    components: [{ c: '一', m: 'one stroke', r: 'standalone' }],
+    mnemonic: 'A single horizontal stroke — <span class="key">one</span>. The simplest kanji of all.',
+    vocab: [{ w: '一つ', r: 'ひとつ', m: 'one (thing)' }, { w: '一月', r: 'いちがつ', m: 'January' }, { w: '一人', r: 'ひとり', m: 'one person' }] },
+  { char: '二', meaning: 'two', on: 'ニ', kun: 'ふた-', level: 'N5', strokes: 2,
+    components: [{ c: '二', m: 'two strokes', r: 'standalone' }],
+    mnemonic: 'Two horizontal lines — <span class="key">two</span>. Top one shorter than the bottom.',
+    vocab: [{ w: '二つ', r: 'ふたつ', m: 'two (things)' }, { w: '二月', r: 'にがつ', m: 'February' }] },
+  { char: '三', meaning: 'three', on: 'サン', kun: 'み-', level: 'N5', strokes: 3,
+    components: [{ c: '三', m: 'three strokes', r: 'standalone' }],
+    mnemonic: 'Three horizontal lines — <span class="key">three</span>. Middle line is shortest.',
+    vocab: [{ w: '三つ', r: 'みっつ', m: 'three (things)' }, { w: '三月', r: 'さんがつ', m: 'March' }] },
+  { char: '四', meaning: 'four', on: 'シ', kun: 'よ・よん', level: 'N5', strokes: 5,
+    components: [{ c: '口', m: 'mouth / enclosure', r: 'コウ' }],
+    mnemonic: 'A box with <span class="key">legs splayed out</span> inside — four legs of a table.',
+    vocab: [{ w: '四つ', r: 'よっつ', m: 'four (things)' }, { w: '四月', r: 'しがつ', m: 'April' }] },
+  { char: '五', meaning: 'five', on: 'ゴ', kun: 'いつ-', level: 'N5', strokes: 4,
+    components: [{ c: '五', m: 'five (pictograph)', r: 'standalone' }],
+    mnemonic: 'A stylized hand showing <span class="key">five fingers</span>.',
+    vocab: [{ w: '五つ', r: 'いつつ', m: 'five (things)' }, { w: '五月', r: 'ごがつ', m: 'May' }] },
+  { char: '六', meaning: 'six', on: 'ロク', kun: 'む-', level: 'N5', strokes: 4,
+    components: [{ c: '亠', m: 'lid', r: '—' }],
+    mnemonic: 'A <span class="key">small hat above two legs</span> — a person sitting cross-legged at 6 o\'clock.',
+    vocab: [{ w: '六つ', r: 'むっつ', m: 'six (things)' }, { w: '六月', r: 'ろくがつ', m: 'June' }] },
+  { char: '七', meaning: 'seven', on: 'シチ', kun: 'なな-', level: 'N5', strokes: 2,
+    components: [{ c: '七', m: 'seven (pictograph)', r: 'standalone' }],
+    mnemonic: 'Looks like a <span class="key">crooked seven</span> — easy to confuse with 九.',
+    vocab: [{ w: '七つ', r: 'ななつ', m: 'seven (things)' }, { w: '七月', r: 'しちがつ', m: 'July' }] },
+  { char: '八', meaning: 'eight', on: 'ハチ', kun: 'や-', level: 'N5', strokes: 2,
+    components: [{ c: '八', m: 'eight (pictograph)', r: 'standalone' }],
+    mnemonic: 'Two strokes that <span class="key">split outward</span> — eight, lucky for its spreading shape.',
+    vocab: [{ w: '八つ', r: 'やっつ', m: 'eight (things)' }, { w: '八月', r: 'はちがつ', m: 'August' }] },
+  { char: '九', meaning: 'nine', on: 'キュウ・ク', kun: 'ここの-', level: 'N5', strokes: 2,
+    components: [{ c: '九', m: 'nine (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">hook curving back</span> — nine, almost ten but not quite.',
+    vocab: [{ w: '九つ', r: 'ここのつ', m: 'nine (things)' }, { w: '九月', r: 'くがつ', m: 'September' }] },
+  { char: '十', meaning: 'ten', on: 'ジュウ', kun: 'とお', level: 'N5', strokes: 2,
+    components: [{ c: '十', m: 'cross', r: 'standalone' }],
+    mnemonic: 'A <span class="key">cross</span> — ten fingers crossed.',
+    vocab: [{ w: '十', r: 'じゅう', m: 'ten' }, { w: '十月', r: 'じゅうがつ', m: 'October' }] },
+  { char: '百', meaning: 'hundred', on: 'ヒャク', kun: '—', level: 'N5', strokes: 6,
+    components: [{ c: '一', m: 'one', r: 'イチ' }, { c: '白', m: 'white', r: 'ハク' }],
+    mnemonic: '<span class="key">One (一) above white (白)</span> — one hundred white things.',
+    vocab: [{ w: '百', r: 'ひゃく', m: 'hundred' }, { w: '三百', r: 'さんびゃく', m: 'three hundred' }] },
+  { char: '千', meaning: 'thousand', on: 'セン', kun: 'ち', level: 'N5', strokes: 3,
+    components: [{ c: '千', m: 'thousand', r: 'standalone' }],
+    mnemonic: '<span class="key">A person (人) over ten (十)</span> — one person for a thousand.',
+    vocab: [{ w: '千', r: 'せん', m: 'thousand' }, { w: '千円', r: 'せんえん', m: '1000 yen' }] },
+  { char: '万', meaning: 'ten thousand', on: 'マン・バン', kun: '—', level: 'N5', strokes: 3,
+    components: [{ c: '万', m: 'ten thousand', r: 'standalone' }],
+    mnemonic: 'Japanese counts large numbers in units of <span class="key">10,000</span> (一万 = 10,000).',
+    vocab: [{ w: '一万', r: 'いちまん', m: 'ten thousand' }, { w: '万一', r: 'まんいち', m: 'just in case' }] },
+  { char: '日', meaning: 'sun, day', on: 'ニチ・ジツ', kun: 'ひ・か', level: 'N5', strokes: 4,
+    components: [{ c: '日', m: 'sun (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">window with a line through it</span> — the sun moving across the sky.',
+    vocab: [{ w: '今日', r: 'きょう', m: 'today' }, { w: '日本', r: 'にほん', m: 'Japan' }, { w: '毎日', r: 'まいにち', m: 'every day' }] },
+  { char: '月', meaning: 'moon, month', on: 'ゲツ・ガツ', kun: 'つき', level: 'N5', strokes: 4,
+    components: [{ c: '月', m: 'moon / flesh radical', r: 'standalone' }],
+    mnemonic: 'A <span class="key">crescent moon</span> with two horizontal strokes inside.',
+    vocab: [{ w: '月曜日', r: 'げつようび', m: 'Monday' }, { w: '今月', r: 'こんげつ', m: 'this month' }] },
+  { char: '火', meaning: 'fire', on: 'カ', kun: 'ひ', level: 'N5', strokes: 4,
+    components: [{ c: '火', m: 'fire (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">person with arms raised</span> jumping back from flames.',
+    vocab: [{ w: '火曜日', r: 'かようび', m: 'Tuesday' }, { w: '花火', r: 'はなび', m: 'fireworks' }] },
+  { char: '水', meaning: 'water', on: 'スイ', kun: 'みず', level: 'N5', strokes: 4,
+    components: [{ c: '水', m: 'water (pictograph)', r: 'standalone' }],
+    mnemonic: 'Streams of <span class="key">water flowing outward</span> from a center.',
+    vocab: [{ w: '水曜日', r: 'すいようび', m: 'Wednesday' }, { w: '水道', r: 'すいどう', m: 'water supply' }] },
+  { char: '木', meaning: 'tree, wood', on: 'モク・ボク', kun: 'き', level: 'N5', strokes: 4,
+    components: [{ c: '木', m: 'tree (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">tree</span> with trunk, branches, roots. Two trees (林) = woods; three (森) = forest.',
+    vocab: [{ w: '木曜日', r: 'もくようび', m: 'Thursday' }, { w: '木造', r: 'もくぞう', m: 'wooden' }] },
+  { char: '金', meaning: 'gold, money', on: 'キン・コン', kun: 'かね', level: 'N5', strokes: 8,
+    components: [{ c: '人', m: 'person', r: 'ジン' }, { c: '王', m: 'king', r: 'オウ' }],
+    mnemonic: 'A <span class="key">person over a king</span> — protecting buried gold.',
+    vocab: [{ w: '金曜日', r: 'きんようび', m: 'Friday' }, { w: 'お金', r: 'おかね', m: 'money' }] },
+  { char: '土', meaning: 'earth, soil', on: 'ド・ト', kun: 'つち', level: 'N5', strokes: 3,
+    components: [{ c: '土', m: 'earth (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">plant pushing up from soil</span>.',
+    vocab: [{ w: '土曜日', r: 'どようび', m: 'Saturday' }, { w: '土地', r: 'とち', m: 'land' }] },
+  { char: '山', meaning: 'mountain', on: 'サン', kun: 'やま', level: 'N5', strokes: 3,
+    components: [{ c: '山', m: 'mountain (pictograph)', r: 'standalone' }],
+    mnemonic: 'Three <span class="key">peaks</span> rising from a base — Mt. Fuji in three strokes.',
+    vocab: [{ w: '山', r: 'やま', m: 'mountain' }, { w: '富士山', r: 'ふじさん', m: 'Mt. Fuji' }] },
+  { char: '川', meaning: 'river', on: 'セン', kun: 'かわ', level: 'N5', strokes: 3,
+    components: [{ c: '川', m: 'river (pictograph)', r: 'standalone' }],
+    mnemonic: 'Three <span class="key">vertical lines flowing</span> — water in a riverbed.',
+    vocab: [{ w: '川', r: 'かわ', m: 'river' }, { w: '小川', r: 'おがわ', m: 'stream' }] },
+  { char: '田', meaning: 'rice field', on: 'デン', kun: 'た', level: 'N5', strokes: 5,
+    components: [{ c: '田', m: 'field (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">rice paddy</span> divided into four plots.',
+    vocab: [{ w: '田んぼ', r: 'たんぼ', m: 'rice field' }, { w: '田中', r: 'たなか', m: 'Tanaka' }] },
+  { char: '天', meaning: 'heaven, sky', on: 'テン', kun: 'あめ', level: 'N5', strokes: 4,
+    components: [{ c: '一', m: 'one (sky)', r: 'イチ' }, { c: '大', m: 'big', r: 'ダイ' }],
+    mnemonic: 'A <span class="key">big person (大) under the sky (一)</span>.',
+    vocab: [{ w: '天気', r: 'てんき', m: 'weather' }, { w: '天才', r: 'てんさい', m: 'genius' }] },
+  { char: '空', meaning: 'sky, empty', on: 'クウ', kun: 'そら・から', level: 'N5', strokes: 8,
+    components: [{ c: '穴', m: 'hole', r: 'ケツ' }, { c: '工', m: 'craft', r: 'コウ' }],
+    mnemonic: 'A <span class="key">hole crafted</span> in the air — emptiness, sky. Also 空手 (karate) "empty hand."',
+    vocab: [{ w: '空', r: 'そら', m: 'sky' }, { w: '空港', r: 'くうこう', m: 'airport' }] },
+  { char: '雨', meaning: 'rain', on: 'ウ', kun: 'あめ', level: 'N5', strokes: 8,
+    components: [{ c: '雨', m: 'rain (pictograph)', r: 'standalone' }],
+    mnemonic: '<span class="key">Drops falling under clouds</span> — the four interior dots are raindrops.',
+    vocab: [{ w: '雨', r: 'あめ', m: 'rain' }, { w: '梅雨', r: 'つゆ', m: 'rainy season' }] },
+  { char: '花', meaning: 'flower', on: 'カ', kun: 'はな', level: 'N5', strokes: 7,
+    components: [{ c: '艹', m: 'grass radical', r: 'ソウ' }, { c: '化', m: 'change', r: 'カ' }],
+    mnemonic: '<span class="key">Grass (艹) transformed (化)</span> into something beautiful.',
+    vocab: [{ w: '花', r: 'はな', m: 'flower' }, { w: '桜', r: 'さくら', m: 'cherry blossom' }] },
+  { char: '人', meaning: 'person', on: 'ジン・ニン', kun: 'ひと', level: 'N5', strokes: 2,
+    components: [{ c: '人', m: 'person (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">person walking</span> — two legs mid-stride.',
+    vocab: [{ w: '日本人', r: 'にほんじん', m: 'Japanese person' }, { w: '一人', r: 'ひとり', m: 'one person' }] },
+  { char: '男', meaning: 'man', on: 'ダン・ナン', kun: 'おとこ', level: 'N5', strokes: 7,
+    components: [{ c: '田', m: 'rice field', r: 'デン' }, { c: '力', m: 'power', r: 'リョク' }],
+    mnemonic: '<span class="key">Power (力) in the rice field (田)</span> — the man working the land.',
+    vocab: [{ w: '男', r: 'おとこ', m: 'man' }, { w: '男性', r: 'だんせい', m: 'male' }] },
+  { char: '女', meaning: 'woman', on: 'ジョ・ニョ', kun: 'おんな', level: 'N5', strokes: 3,
+    components: [{ c: '女', m: 'woman (pictograph)', r: 'standalone' }],
+    mnemonic: 'A stylized <span class="key">woman sitting with legs crossed</span>.',
+    vocab: [{ w: '女', r: 'おんな', m: 'woman' }, { w: '彼女', r: 'かのじょ', m: 'she / girlfriend' }] },
+  { char: '子', meaning: 'child', on: 'シ', kun: 'こ', level: 'N5', strokes: 3,
+    components: [{ c: '子', m: 'child (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">baby with outstretched arms</span>.',
+    vocab: [{ w: '子供', r: 'こども', m: 'child' }, { w: '女の子', r: 'おんなのこ', m: 'girl' }] },
+  { char: '父', meaning: 'father', on: 'フ', kun: 'ちち', level: 'N5', strokes: 4,
+    components: [{ c: '父', m: 'father (pictograph)', r: 'standalone' }],
+    mnemonic: 'Originally a <span class="key">hand holding an axe</span> — the provider.',
+    vocab: [{ w: '父', r: 'ちち', m: 'father (my)' }, { w: 'お父さん', r: 'おとうさん', m: 'father (polite)' }] },
+  { char: '母', meaning: 'mother', on: 'ボ', kun: 'はは', level: 'N5', strokes: 5,
+    components: [{ c: '母', m: 'mother (pictograph)', r: 'standalone' }],
+    mnemonic: 'A figure with <span class="key">two dots representing breasts</span> — the nurturing mother.',
+    vocab: [{ w: '母', r: 'はは', m: 'mother (my)' }, { w: 'お母さん', r: 'おかあさん', m: 'mother (polite)' }] },
+  { char: '友', meaning: 'friend', on: 'ユウ', kun: 'とも', level: 'N5', strokes: 4,
+    components: [{ c: '又', m: 'hand', r: 'ユウ' }],
+    mnemonic: 'Two <span class="key">hands clasping</span> — friendship.',
+    vocab: [{ w: '友達', r: 'ともだち', m: 'friend' }, { w: '親友', r: 'しんゆう', m: 'best friend' }] },
+  { char: '先', meaning: 'before, ahead', on: 'セン', kun: 'さき', level: 'N5', strokes: 6,
+    components: [{ c: '土', m: 'earth', r: 'ド' }, { c: '儿', m: 'legs', r: 'ジン' }],
+    mnemonic: 'Walking <span class="key">legs ahead onto new earth</span> — going before.',
+    vocab: [{ w: '先生', r: 'せんせい', m: 'teacher' }, { w: '先週', r: 'せんしゅう', m: 'last week' }] },
+  { char: '生', meaning: 'life, birth', on: 'セイ・ショウ', kun: 'い-きる', level: 'N5', strokes: 5,
+    components: [{ c: '生', m: 'life (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">sprout pushing up from the ground</span> — new life.',
+    vocab: [{ w: '学生', r: 'がくせい', m: 'student' }, { w: '人生', r: 'じんせい', m: 'life' }] },
+  { char: '目', meaning: 'eye', on: 'モク', kun: 'め', level: 'N5', strokes: 5,
+    components: [{ c: '目', m: 'eye (pictograph)', r: 'standalone' }],
+    mnemonic: 'A vertical <span class="key">eye</span> — rotated for writing.',
+    vocab: [{ w: '目', r: 'め', m: 'eye' }, { w: '目的', r: 'もくてき', m: 'purpose' }] },
+  { char: '口', meaning: 'mouth', on: 'コウ', kun: 'くち', level: 'N5', strokes: 3,
+    components: [{ c: '口', m: 'mouth (pictograph)', r: 'standalone' }],
+    mnemonic: 'An <span class="key">open mouth</span> — also the "enclosure" radical.',
+    vocab: [{ w: '口', r: 'くち', m: 'mouth' }, { w: '入口', r: 'いりぐち', m: 'entrance' }] },
+  { char: '耳', meaning: 'ear', on: 'ジ', kun: 'みみ', level: 'N5', strokes: 6,
+    components: [{ c: '耳', m: 'ear (pictograph)', r: 'standalone' }],
+    mnemonic: 'A stylized <span class="key">ear</span> with the outer curl.',
+    vocab: [{ w: '耳', r: 'みみ', m: 'ear' }] },
+  { char: '手', meaning: 'hand', on: 'シュ', kun: 'て', level: 'N5', strokes: 4,
+    components: [{ c: '手', m: 'hand (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">hand with fingers spread</span> — appears as 扌 on the left.',
+    vocab: [{ w: '手', r: 'て', m: 'hand' }, { w: '上手', r: 'じょうず', m: 'skillful' }] },
+  { char: '足', meaning: 'foot, leg', on: 'ソク', kun: 'あし', level: 'N5', strokes: 7,
+    components: [{ c: '口', m: 'mouth/joint', r: 'コウ' }],
+    mnemonic: 'A <span class="key">knee joint above a foot</span>.',
+    vocab: [{ w: '足', r: 'あし', m: 'foot, leg' }, { w: '不足', r: 'ふそく', m: 'shortage' }] },
+  { char: '上', meaning: 'up, above', on: 'ジョウ', kun: 'うえ', level: 'N5', strokes: 3,
+    components: [{ c: '上', m: 'up', r: 'standalone' }],
+    mnemonic: 'A mark <span class="key">above a baseline</span>.',
+    vocab: [{ w: '上', r: 'うえ', m: 'above' }, { w: '上手', r: 'じょうず', m: 'skillful' }] },
+  { char: '下', meaning: 'down, below', on: 'カ・ゲ', kun: 'した', level: 'N5', strokes: 3,
+    components: [{ c: '下', m: 'down', r: 'standalone' }],
+    mnemonic: 'A mark <span class="key">below a baseline</span>.',
+    vocab: [{ w: '下', r: 'した', m: 'below' }, { w: '地下', r: 'ちか', m: 'underground' }] },
+  { char: '中', meaning: 'middle, inside', on: 'チュウ', kun: 'なか', level: 'N5', strokes: 4,
+    components: [{ c: '口', m: 'mouth/box', r: 'コウ' }],
+    mnemonic: 'A <span class="key">line through the middle of a box</span> — inside, center.',
+    vocab: [{ w: '中', r: 'なか', m: 'inside' }, { w: '中国', r: 'ちゅうごく', m: 'China' }] },
+  { char: '左', meaning: 'left', on: 'サ', kun: 'ひだり', level: 'N5', strokes: 5,
+    components: [{ c: '工', m: 'craft', r: 'コウ' }],
+    mnemonic: 'A <span class="key">left hand holding a craftsman\'s tool</span>.',
+    vocab: [{ w: '左', r: 'ひだり', m: 'left' }] },
+  { char: '右', meaning: 'right', on: 'ウ・ユウ', kun: 'みぎ', level: 'N5', strokes: 5,
+    components: [{ c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: 'A <span class="key">right hand near the mouth</span> — eating with the right hand.',
+    vocab: [{ w: '右', r: 'みぎ', m: 'right' }] },
+  { char: '前', meaning: 'before, in front', on: 'ゼン', kun: 'まえ', level: 'N5', strokes: 9,
+    components: [{ c: '月', m: 'moon/flesh', r: 'ゲツ' }, { c: '刂', m: 'knife', r: 'トウ' }],
+    mnemonic: '<span class="key">A boat\'s prow cutting forward</span> — in front of.',
+    vocab: [{ w: '前', r: 'まえ', m: 'before, in front' }, { w: '名前', r: 'なまえ', m: 'name' }] },
+  { char: '後', meaning: 'after, behind', on: 'ゴ・コウ', kun: 'うし-ろ・あと', level: 'N5', strokes: 9,
+    components: [{ c: '彳', m: 'step', r: 'テキ' }, { c: '幺', m: 'tiny', r: 'ヨウ' }],
+    mnemonic: '<span class="key">Small steps walking slowly</span> — falling behind.',
+    vocab: [{ w: '後ろ', r: 'うしろ', m: 'behind' }, { w: '午後', r: 'ごご', m: 'afternoon' }] },
+  { char: '大', meaning: 'big', on: 'ダイ・タイ', kun: 'おお-きい', level: 'N5', strokes: 3,
+    components: [{ c: '一', m: 'one', r: 'イチ' }, { c: '人', m: 'person', r: 'ジン' }],
+    mnemonic: 'A <span class="key">person with arms stretched wide</span> — "this big!"',
+    vocab: [{ w: '大きい', r: 'おおきい', m: 'big' }, { w: '大学', r: 'だいがく', m: 'university' }] },
+  { char: '小', meaning: 'small', on: 'ショウ', kun: 'ちい-さい', level: 'N5', strokes: 3,
+    components: [{ c: '小', m: 'small', r: 'standalone' }],
+    mnemonic: 'A <span class="key">central stroke flanked by two small marks</span>.',
+    vocab: [{ w: '小さい', r: 'ちいさい', m: 'small' }, { w: '小学校', r: 'しょうがっこう', m: 'elementary school' }] },
+  { char: '多', meaning: 'many', on: 'タ', kun: 'おお-い', level: 'N5', strokes: 6,
+    components: [{ c: '夕', m: 'evening', r: 'セキ' }],
+    mnemonic: '<span class="key">Two evenings stacked</span> — many nights have passed.',
+    vocab: [{ w: '多い', r: 'おおい', m: 'many, much' }, { w: '多分', r: 'たぶん', m: 'probably' }] },
+  { char: '少', meaning: 'few, little', on: 'ショウ', kun: 'すく-ない', level: 'N5', strokes: 4,
+    components: [{ c: '小', m: 'small', r: 'ショウ' }],
+    mnemonic: '<span class="key">Small (小) with a slash</span> taking some away — even less.',
+    vocab: [{ w: '少し', r: 'すこし', m: 'a little' }, { w: '少ない', r: 'すくない', m: 'few' }] },
+  { char: '行', meaning: 'go', on: 'コウ', kun: 'い-く', level: 'N5', strokes: 6,
+    components: [{ c: '彳', m: 'step', r: 'テキ' }],
+    mnemonic: 'Two <span class="key">walking radicals</span> — feet moving along a road.',
+    vocab: [{ w: '行く', r: 'いく', m: 'to go' }, { w: '銀行', r: 'ぎんこう', m: 'bank' }] },
+  { char: '来', meaning: 'come', on: 'ライ', kun: 'く-る', level: 'N5', strokes: 7,
+    components: [{ c: '木', m: 'tree', r: 'モク' }],
+    mnemonic: '<span class="key">Wheat with grain coming in</span> — harvest came.',
+    vocab: [{ w: '来る', r: 'くる', m: 'to come' }, { w: '来年', r: 'らいねん', m: 'next year' }] },
+  { char: '見', meaning: 'see', on: 'ケン', kun: 'み-る', level: 'N5', strokes: 7,
+    components: [{ c: '目', m: 'eye', r: 'モク' }, { c: '儿', m: 'legs', r: 'ジン' }],
+    mnemonic: 'An <span class="key">eye (目) on legs (儿)</span> — looking around.',
+    vocab: [{ w: '見る', r: 'みる', m: 'to see' }, { w: '意見', r: 'いけん', m: 'opinion' }] },
+  { char: '聞', meaning: 'hear, ask', on: 'ブン・モン', kun: 'き-く', level: 'N5', strokes: 14,
+    components: [{ c: '門', m: 'gate', r: 'モン' }, { c: '耳', m: 'ear', r: 'ジ' }],
+    mnemonic: 'An <span class="key">ear at the gate</span> — listening for who\'s outside.',
+    vocab: [{ w: '聞く', r: 'きく', m: 'to hear, ask' }, { w: '新聞', r: 'しんぶん', m: 'newspaper' }] },
+  { char: '食', meaning: 'eat, food', on: 'ショク', kun: 'た-べる', level: 'N5', strokes: 9,
+    components: [{ c: '人', m: 'person', r: 'ジン' }, { c: '良', m: 'good', r: 'リョウ' }],
+    mnemonic: 'A <span class="key">person gathered around good food</span>.',
+    vocab: [{ w: '食べる', r: 'たべる', m: 'to eat' }, { w: '食事', r: 'しょくじ', m: 'a meal' }] },
+  { char: '飲', meaning: 'drink', on: 'イン', kun: 'の-む', level: 'N5', strokes: 12,
+    components: [{ c: '食', m: 'food', r: 'ショク' }, { c: '欠', m: 'lack/yawn', r: 'ケツ' }],
+    mnemonic: '<span class="key">Food with an open mouth</span> — to drink down.',
+    vocab: [{ w: '飲む', r: 'のむ', m: 'to drink' }, { w: '飲み物', r: 'のみもの', m: 'beverage' }] },
+  { char: '言', meaning: 'say, word', on: 'ゲン・ゴン', kun: 'い-う・こと', level: 'N5', strokes: 7,
+    components: [{ c: '言', m: 'speech', r: 'standalone' }],
+    mnemonic: 'A <span class="key">mouth with sound waves rising</span> — speaking, words.',
+    vocab: [{ w: '言う', r: 'いう', m: 'to say' }, { w: '言葉', r: 'ことば', m: 'word' }] },
+  { char: '話', meaning: 'speak, story', on: 'ワ', kun: 'はな-す', level: 'N5', strokes: 13,
+    components: [{ c: '言', m: 'speech', r: 'ゲン' }, { c: '舌', m: 'tongue', r: 'ゼツ' }],
+    mnemonic: '<span class="key">Speech with a tongue</span> — wagging the tongue.',
+    vocab: [{ w: '話す', r: 'はなす', m: 'to speak' }, { w: '電話', r: 'でんわ', m: 'telephone' }] },
+  { char: '読', meaning: 'read', on: 'ドク', kun: 'よ-む', level: 'N5', strokes: 14,
+    components: [{ c: '言', m: 'speech', r: 'ゲン' }, { c: '売', m: 'sell', r: 'バイ' }],
+    mnemonic: '<span class="key">Speaking what is sold</span> — reading the news.',
+    vocab: [{ w: '読む', r: 'よむ', m: 'to read' }, { w: '読書', r: 'どくしょ', m: 'reading books' }] },
+  { char: '書', meaning: 'write', on: 'ショ', kun: 'か-く', level: 'N5', strokes: 10,
+    components: [{ c: '聿', m: 'brush', r: 'イツ' }, { c: '日', m: 'sun', r: 'ニチ' }],
+    mnemonic: 'A <span class="key">brush recording the day</span> — writing.',
+    vocab: [{ w: '書く', r: 'かく', m: 'to write' }, { w: '辞書', r: 'じしょ', m: 'dictionary' }] },
+  { char: '買', meaning: 'buy', on: 'バイ', kun: 'か-う', level: 'N5', strokes: 12,
+    components: [{ c: '罒', m: 'net', r: 'モウ' }, { c: '貝', m: 'shellfish/money', r: 'バイ' }],
+    mnemonic: 'Catching <span class="key">shells in a net</span> — shells were ancient money.',
+    vocab: [{ w: '買う', r: 'かう', m: 'to buy' }, { w: '買い物', r: 'かいもの', m: 'shopping' }] },
+  { char: '学', meaning: 'study, learn', on: 'ガク', kun: 'まな-ぶ', level: 'N5', strokes: 8,
+    components: [{ c: '冖', m: 'cover', r: '—' }, { c: '子', m: 'child', r: 'シ' }],
+    mnemonic: 'A <span class="key">child under a roof with lessons above</span>.',
+    vocab: [{ w: '学校', r: 'がっこう', m: 'school' }, { w: '大学', r: 'だいがく', m: 'university' }] },
+  { char: '校', meaning: 'school', on: 'コウ', kun: '—', level: 'N5', strokes: 10,
+    components: [{ c: '木', m: 'tree', r: 'モク' }, { c: '交', m: 'mix/cross', r: 'コウ' }],
+    mnemonic: '<span class="key">Trees crossing</span> on a campus.',
+    vocab: [{ w: '学校', r: 'がっこう', m: 'school' }, { w: '高校', r: 'こうこう', m: 'high school' }] },
+  { char: '本', meaning: 'book, origin', on: 'ホン', kun: 'もと', level: 'N5', strokes: 5,
+    components: [{ c: '木', m: 'tree', r: 'モク' }, { c: '一', m: 'one', r: 'イチ' }],
+    mnemonic: 'A <span class="key">tree with a mark at its base</span> — the root, the origin.',
+    vocab: [{ w: '本', r: 'ほん', m: 'book' }, { w: '日本', r: 'にほん', m: 'Japan' }] },
+  { char: '名', meaning: 'name', on: 'メイ', kun: 'な', level: 'N5', strokes: 6,
+    components: [{ c: '夕', m: 'evening', r: 'セキ' }, { c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: 'At <span class="key">evening, you ask aloud</span> for someone\'s name — too dark to see.',
+    vocab: [{ w: '名前', r: 'なまえ', m: 'name' }, { w: '有名', r: 'ゆうめい', m: 'famous' }] },
+  { char: '年', meaning: 'year', on: 'ネン', kun: 'とし', level: 'N5', strokes: 6,
+    components: [{ c: '年', m: 'year', r: 'standalone' }],
+    mnemonic: 'Originally <span class="key">a person carrying rice</span> — one harvest = one year.',
+    vocab: [{ w: '今年', r: 'ことし', m: 'this year' }, { w: '去年', r: 'きょねん', m: 'last year' }] },
+  { char: '時', meaning: 'time, hour', on: 'ジ', kun: 'とき', level: 'N5', strokes: 10,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }, { c: '寺', m: 'temple', r: 'ジ' }],
+    mnemonic: 'The <span class="key">sun at the temple</span> — telling time by its position.',
+    vocab: [{ w: '時間', r: 'じかん', m: 'time' }, { w: '何時', r: 'なんじ', m: 'what time' }] },
+  { char: '分', meaning: 'minute, part', on: 'フン・ブン', kun: 'わ-ける', level: 'N5', strokes: 4,
+    components: [{ c: '八', m: 'eight/split', r: 'ハチ' }, { c: '刀', m: 'sword', r: 'トウ' }],
+    mnemonic: 'A <span class="key">sword splitting something</span> in two — minutes, parts.',
+    vocab: [{ w: '十分', r: 'じゅっぷん', m: 'ten minutes' }, { w: '自分', r: 'じぶん', m: 'oneself' }] },
+  { char: '間', meaning: 'interval, between', on: 'カン・ケン', kun: 'あいだ', level: 'N5', strokes: 12,
+    components: [{ c: '門', m: 'gate', r: 'モン' }, { c: '日', m: 'sun', r: 'ニチ' }],
+    mnemonic: '<span class="key">Sun shining between gates</span> — the interval.',
+    vocab: [{ w: '時間', r: 'じかん', m: 'time' }, { w: '人間', r: 'にんげん', m: 'human being' }] },
+  { char: '今', meaning: 'now', on: 'コン・キン', kun: 'いま', level: 'N5', strokes: 4,
+    components: [{ c: '人', m: 'person', r: 'ジン' }],
+    mnemonic: '<span class="key">A person under a roof in this moment</span> — now.',
+    vocab: [{ w: '今', r: 'いま', m: 'now' }, { w: '今日', r: 'きょう', m: 'today' }] },
+  { char: '半', meaning: 'half', on: 'ハン', kun: 'なか-ば', level: 'N5', strokes: 5,
+    components: [{ c: '半', m: 'half (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">cow split down the middle</span> — half.',
+    vocab: [{ w: '半分', r: 'はんぶん', m: 'half' }, { w: '半年', r: 'はんとし', m: 'half a year' }] },
+  { char: '何', meaning: 'what', on: 'カ', kun: 'なに・なん', level: 'N5', strokes: 7,
+    components: [{ c: '亻', m: 'person', r: 'ジン' }, { c: '可', m: 'possible', r: 'カ' }],
+    mnemonic: 'A <span class="key">person asking "what is possible?"</span> — what.',
+    vocab: [{ w: '何', r: 'なに', m: 'what' }, { w: '何時', r: 'なんじ', m: 'what time' }] },
+  { char: '毎', meaning: 'every', on: 'マイ', kun: '—', level: 'N5', strokes: 6,
+    components: [{ c: '毎', m: 'every', r: 'standalone' }],
+    mnemonic: '<span class="key">A mother with hair, present always</span> — every time, every day.',
+    vocab: [{ w: '毎日', r: 'まいにち', m: 'every day' }, { w: '毎週', r: 'まいしゅう', m: 'every week' }] },
+  { char: '週', meaning: 'week', on: 'シュウ', kun: '—', level: 'N5', strokes: 11,
+    components: [{ c: '辶', m: 'road', r: '—' }, { c: '周', m: 'circumference', r: 'シュウ' }],
+    mnemonic: '<span class="key">A cycle along the road</span> — one week\'s circuit.',
+    vocab: [{ w: '今週', r: 'こんしゅう', m: 'this week' }, { w: '来週', r: 'らいしゅう', m: 'next week' }] },
+  { char: '午', meaning: 'noon', on: 'ゴ', kun: '—', level: 'N5', strokes: 4,
+    components: [{ c: '午', m: 'noon (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">pestle pounding at midday</span> — noon.',
+    vocab: [{ w: '午前', r: 'ごぜん', m: 'AM, morning' }, { w: '午後', r: 'ごご', m: 'PM, afternoon' }] },
+  { char: '休', meaning: 'rest', on: 'キュウ', kun: 'やす-む', level: 'N5', strokes: 6,
+    components: [{ c: '亻', m: 'person', r: 'ジン' }, { c: '木', m: 'tree', r: 'モク' }],
+    mnemonic: 'A <span class="key">person resting against a tree</span>.',
+    vocab: [{ w: '休む', r: 'やすむ', m: 'to rest' }, { w: '夏休み', r: 'なつやすみ', m: 'summer vacation' }] },
+  { char: '可', meaning: 'possible, acceptable', on: 'カ', kun: 'べ-き', level: 'N3', strokes: 5,
+    components: [{ c: '丁', m: 'street/fourth', r: 'チョウ' }, { c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: 'A <span class="key">mouth under a hook</span> — the mouth says "OK, possible."',
+    vocab: [{ w: '可能', r: 'かのう', m: 'possible' }, { w: '可能性', r: 'かのうせい', m: 'possibility' }] },
+  { char: '能', meaning: 'ability, talent', on: 'ノウ', kun: '—', level: 'N3', strokes: 10,
+    components: [{ c: '厶', m: 'private', r: 'シ' }, { c: '月', m: 'flesh', r: 'ゲツ' }, { c: '匕', m: 'spoon', r: 'ヒ' }],
+    mnemonic: '<span class="key">Private bodily skill</span> — personal capability. Also "Noh" theater.',
+    vocab: [{ w: '能力', r: 'のうりょく', m: 'ability' }, { w: '可能', r: 'かのう', m: 'possible' }] },
+  { char: '性', meaning: 'nature, quality', on: 'セイ・ショウ', kun: '—', level: 'N3', strokes: 8,
+    components: [{ c: '忄', m: 'heart radical', r: 'シン' }, { c: '生', m: 'life', r: 'セイ' }],
+    mnemonic: 'The <span class="key">heart you are born with</span> — your fundamental nature.',
+    vocab: [{ w: '性格', r: 'せいかく', m: 'personality' }, { w: '可能性', r: 'かのうせい', m: 'possibility' }] },
+  { char: '無', meaning: 'nothing, not', on: 'ム・ブ', kun: 'な-い', level: 'N3', strokes: 12,
+    components: [{ c: '𠂉', m: 'top', r: '—' }, { c: '灬', m: 'fire below', r: 'カ' }],
+    mnemonic: 'A pile of grass <span class="key">burning to nothing</span>.',
+    vocab: [{ w: '無限', r: 'むげん', m: 'infinite' }, { w: '無理', r: 'むり', m: 'impossible' }] },
+  { char: '限', meaning: 'limit, boundary', on: 'ゲン', kun: 'かぎ-る', level: 'N3', strokes: 9,
+    components: [{ c: '阝', m: 'hill', r: 'フ' }, { c: '艮', m: 'stopping', r: 'コン' }],
+    mnemonic: 'A <span class="key">hill that stops you</span> — a limit.',
+    vocab: [{ w: '限界', r: 'げんかい', m: 'limit' }, { w: '無限', r: 'むげん', m: 'infinite' }] },
+
+  // === N4 BATCH ===
+  { char: '会', meaning: 'meeting, association', on: 'カイ・エ', kun: 'あ-う', level: 'N4', strokes: 6,
+    components: [{ c: '人', m: 'person', r: 'ジン' }, { c: '云', m: 'cloud', r: 'ウン' }],
+    mnemonic: '<span class="key">People gathering under a roof</span> — a meeting.',
+    vocab: [{ w: '会う', r: 'あう', m: 'to meet' }, { w: '会社', r: 'かいしゃ', m: 'company' }] },
+  { char: '社', meaning: 'company, shrine', on: 'シャ', kun: 'やしろ', level: 'N4', strokes: 7,
+    components: [{ c: '礻', m: 'altar', r: 'シ' }, { c: '土', m: 'earth', r: 'ド' }],
+    mnemonic: 'An <span class="key">altar on earth</span> — a Shinto shrine, later also "company."',
+    vocab: [{ w: '会社', r: 'かいしゃ', m: 'company' }, { w: '神社', r: 'じんじゃ', m: 'shrine' }] },
+  { char: '家', meaning: 'house, home', on: 'カ・ケ', kun: 'いえ・うち', level: 'N4', strokes: 10,
+    components: [{ c: '宀', m: 'roof', r: '—' }, { c: '豕', m: 'pig', r: 'シ' }],
+    mnemonic: 'A <span class="key">pig under a roof</span> — livestock in the home, family.',
+    vocab: [{ w: '家', r: 'いえ', m: 'house' }, { w: '家族', r: 'かぞく', m: 'family' }] },
+  { char: '族', meaning: 'tribe, family', on: 'ゾク', kun: '—', level: 'N4', strokes: 11,
+    components: [{ c: '方', m: 'direction', r: 'ホウ' }, { c: '矢', m: 'arrow', r: 'シ' }],
+    mnemonic: '<span class="key">A banner and arrows</span> — your clan, your tribe.',
+    vocab: [{ w: '家族', r: 'かぞく', m: 'family' }, { w: '民族', r: 'みんぞく', m: 'ethnic group' }] },
+  { char: '国', meaning: 'country', on: 'コク', kun: 'くに', level: 'N4', strokes: 8,
+    components: [{ c: '囗', m: 'enclosure', r: '—' }, { c: '玉', m: 'jewel/king', r: 'ギョク' }],
+    mnemonic: 'A <span class="key">jewel (玉) inside borders (囗)</span> — a nation\'s treasure within its land.',
+    vocab: [{ w: '国', r: 'くに', m: 'country' }, { w: '外国', r: 'がいこく', m: 'foreign country' }] },
+  { char: '京', meaning: 'capital', on: 'キョウ・ケイ', kun: '—', level: 'N4', strokes: 8,
+    components: [{ c: '亠', m: 'lid', r: '—' }, { c: '口', m: 'mouth', r: 'コウ' }, { c: '小', m: 'small', r: 'ショウ' }],
+    mnemonic: 'A <span class="key">grand tower in the capital</span> — Tokyo (東京) = "Eastern Capital."',
+    vocab: [{ w: '東京', r: 'とうきょう', m: 'Tokyo' }, { w: '京都', r: 'きょうと', m: 'Kyoto' }] },
+  { char: '都', meaning: 'metropolis, capital', on: 'ト・ツ', kun: 'みやこ', level: 'N4', strokes: 11,
+    components: [{ c: '者', m: 'person', r: 'シャ' }, { c: '阝', m: 'town', r: 'フ' }],
+    mnemonic: '<span class="key">A town full of people</span> — the metropolis.',
+    vocab: [{ w: '東京都', r: 'とうきょうと', m: 'Tokyo Metropolis' }, { w: '都市', r: 'とし', m: 'city' }] },
+  { char: '市', meaning: 'city, market', on: 'シ', kun: 'いち', level: 'N4', strokes: 5,
+    components: [{ c: '亠', m: 'lid', r: '—' }, { c: '巾', m: 'cloth', r: 'キン' }],
+    mnemonic: 'A <span class="key">marketplace banner</span> — a city, a market.',
+    vocab: [{ w: '都市', r: 'とし', m: 'city' }, { w: '市場', r: 'いちば', m: 'marketplace' }] },
+  { char: '東', meaning: 'east', on: 'トウ', kun: 'ひがし', level: 'N4', strokes: 8,
+    components: [{ c: '木', m: 'tree', r: 'モク' }, { c: '日', m: 'sun', r: 'ニチ' }],
+    mnemonic: 'The <span class="key">sun rising behind a tree</span> — east.',
+    vocab: [{ w: '東京', r: 'とうきょう', m: 'Tokyo' }, { w: '東口', r: 'ひがしぐち', m: 'east exit' }] },
+  { char: '西', meaning: 'west', on: 'セイ・サイ', kun: 'にし', level: 'N4', strokes: 6,
+    components: [{ c: '西', m: 'west (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">bird settling in its nest at sunset</span> — west.',
+    vocab: [{ w: '西', r: 'にし', m: 'west' }, { w: '関西', r: 'かんさい', m: 'Kansai region' }] },
+  { char: '南', meaning: 'south', on: 'ナン', kun: 'みなみ', level: 'N4', strokes: 9,
+    components: [{ c: '南', m: 'south', r: 'standalone' }],
+    mnemonic: 'Think of <span class="key">"nan"</span> — Japan\'s warm <span class="key">southern</span> regions.',
+    vocab: [{ w: '南', r: 'みなみ', m: 'south' }, { w: '南北', r: 'なんぼく', m: 'north-south' }] },
+  { char: '北', meaning: 'north', on: 'ホク', kun: 'きた', level: 'N4', strokes: 5,
+    components: [{ c: '北', m: 'two people back-to-back', r: 'standalone' }],
+    mnemonic: 'Two people <span class="key">back-to-back facing away</span> — historically armies faced south, fled north.',
+    vocab: [{ w: '北', r: 'きた', m: 'north' }, { w: '北海道', r: 'ほっかいどう', m: 'Hokkaido' }] },
+  { char: '海', meaning: 'sea, ocean', on: 'カイ', kun: 'うみ', level: 'N4', strokes: 9,
+    components: [{ c: '氵', m: 'water', r: 'スイ' }, { c: '毎', m: 'every', r: 'マイ' }],
+    mnemonic: '<span class="key">Water everywhere</span> — the ocean.',
+    vocab: [{ w: '海', r: 'うみ', m: 'sea' }, { w: '海外', r: 'かいがい', m: 'overseas' }] },
+  { char: '道', meaning: 'road, way', on: 'ドウ・トウ', kun: 'みち', level: 'N4', strokes: 12,
+    components: [{ c: '辶', m: 'road radical', r: '—' }, { c: '首', m: 'neck/head', r: 'シュ' }],
+    mnemonic: '<span class="key">A head moving along a path</span> — the road, the Way (as in 武道 budo).',
+    vocab: [{ w: '道', r: 'みち', m: 'road, way' }, { w: '北海道', r: 'ほっかいどう', m: 'Hokkaido' }] },
+  { char: '駅', meaning: 'station', on: 'エキ', kun: '—', level: 'N4', strokes: 14,
+    components: [{ c: '馬', m: 'horse', r: 'バ' }, { c: '尺', m: 'shaku/measure', r: 'シャク' }],
+    mnemonic: 'Originally a <span class="key">horse-changing post</span> — now a train station.',
+    vocab: [{ w: '駅', r: 'えき', m: 'station' }, { w: '駅前', r: 'えきまえ', m: 'in front of station' }] },
+  { char: '電', meaning: 'electricity', on: 'デン', kun: '—', level: 'N4', strokes: 13,
+    components: [{ c: '雨', m: 'rain', r: 'ウ' }, { c: '电', m: 'lightning', r: '—' }],
+    mnemonic: '<span class="key">Lightning under the rain</span> — electricity.',
+    vocab: [{ w: '電車', r: 'でんしゃ', m: 'train' }, { w: '電話', r: 'でんわ', m: 'telephone' }] },
+  { char: '車', meaning: 'car, vehicle', on: 'シャ', kun: 'くるま', level: 'N4', strokes: 7,
+    components: [{ c: '車', m: 'cart (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">cart seen from above</span> — wheel, axle, frame.',
+    vocab: [{ w: '車', r: 'くるま', m: 'car' }, { w: '自転車', r: 'じてんしゃ', m: 'bicycle' }] },
+  { char: '自', meaning: 'self', on: 'ジ・シ', kun: 'みずか-ら', level: 'N4', strokes: 6,
+    components: [{ c: '自', m: 'nose (pictograph)', r: 'standalone' }],
+    mnemonic: 'Originally a <span class="key">nose</span> — Japanese point at their nose to mean "me."',
+    vocab: [{ w: '自分', r: 'じぶん', m: 'oneself' }, { w: '自動車', r: 'じどうしゃ', m: 'automobile' }] },
+  { char: '動', meaning: 'move', on: 'ドウ', kun: 'うご-く', level: 'N4', strokes: 11,
+    components: [{ c: '重', m: 'heavy', r: 'ジュウ' }, { c: '力', m: 'power', r: 'リョク' }],
+    mnemonic: '<span class="key">Power applied to something heavy</span> — making it move.',
+    vocab: [{ w: '動く', r: 'うごく', m: 'to move' }, { w: '運動', r: 'うんどう', m: 'exercise' }] },
+  { char: '力', meaning: 'power, strength', on: 'リョク・リキ', kun: 'ちから', level: 'N4', strokes: 2,
+    components: [{ c: '力', m: 'arm flexed', r: 'standalone' }],
+    mnemonic: 'An <span class="key">arm flexed showing muscle</span> — power.',
+    vocab: [{ w: '力', r: 'ちから', m: 'power' }, { w: '電力', r: 'でんりょく', m: 'electric power' }] },
+  { char: '気', meaning: 'spirit, energy, air', on: 'キ・ケ', kun: '—', level: 'N4', strokes: 6,
+    components: [{ c: '气', m: 'steam', r: 'キ' }],
+    mnemonic: '<span class="key">Steam rising</span> — vital energy, "ki," the same as in 元気 (genki).',
+    vocab: [{ w: '元気', r: 'げんき', m: 'healthy, lively' }, { w: '天気', r: 'てんき', m: 'weather' }] },
+  { char: '元', meaning: 'origin, source', on: 'ゲン・ガン', kun: 'もと', level: 'N4', strokes: 4,
+    components: [{ c: '二', m: 'two', r: 'ニ' }, { c: '儿', m: 'legs', r: '—' }],
+    mnemonic: 'A <span class="key">person standing on solid ground</span> — origin, foundation.',
+    vocab: [{ w: '元気', r: 'げんき', m: 'healthy' }, { w: '地元', r: 'じもと', m: 'hometown' }] },
+  { char: '心', meaning: 'heart, mind', on: 'シン', kun: 'こころ', level: 'N4', strokes: 4,
+    components: [{ c: '心', m: 'heart (pictograph)', r: 'standalone' }],
+    mnemonic: 'A stylized <span class="key">heart with chambers</span> — also "mind."',
+    vocab: [{ w: '心', r: 'こころ', m: 'heart, mind' }, { w: '安心', r: 'あんしん', m: 'peace of mind' }] },
+  { char: '思', meaning: 'think', on: 'シ', kun: 'おも-う', level: 'N4', strokes: 9,
+    components: [{ c: '田', m: 'rice field', r: 'デン' }, { c: '心', m: 'heart', r: 'シン' }],
+    mnemonic: '<span class="key">Heart and head working together</span> — thinking.',
+    vocab: [{ w: '思う', r: 'おもう', m: 'to think' }, { w: '思想', r: 'しそう', m: 'thought, ideology' }] },
+  { char: '知', meaning: 'know', on: 'チ', kun: 'し-る', level: 'N4', strokes: 8,
+    components: [{ c: '矢', m: 'arrow', r: 'シ' }, { c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: 'An <span class="key">arrow from the mouth</span> — words that pierce, knowing.',
+    vocab: [{ w: '知る', r: 'しる', m: 'to know' }, { w: '知識', r: 'ちしき', m: 'knowledge' }] },
+  { char: '考', meaning: 'consider', on: 'コウ', kun: 'かんが-える', level: 'N4', strokes: 6,
+    components: [{ c: '耂', m: 'old', r: 'ロウ' }],
+    mnemonic: '<span class="key">An elder pondering</span> — to consider, to think carefully.',
+    vocab: [{ w: '考える', r: 'かんがえる', m: 'to think over' }, { w: '考え', r: 'かんがえ', m: 'thought, idea' }] },
+  { char: '使', meaning: 'use, send', on: 'シ', kun: 'つか-う', level: 'N4', strokes: 8,
+    components: [{ c: '亻', m: 'person', r: 'ジン' }, { c: '吏', m: 'official', r: 'リ' }],
+    mnemonic: 'A <span class="key">person commanding an official</span> — to use, to send.',
+    vocab: [{ w: '使う', r: 'つかう', m: 'to use' }, { w: '大使', r: 'たいし', m: 'ambassador' }] },
+  { char: '作', meaning: 'make, do', on: 'サク・サ', kun: 'つく-る', level: 'N4', strokes: 7,
+    components: [{ c: '亻', m: 'person', r: 'ジン' }, { c: '乍', m: 'just now', r: 'サ' }],
+    mnemonic: 'A <span class="key">person crafting just now</span> — to make.',
+    vocab: [{ w: '作る', r: 'つくる', m: 'to make' }, { w: '作品', r: 'さくひん', m: 'a work, piece' }] },
+  { char: '持', meaning: 'hold, have', on: 'ジ', kun: 'も-つ', level: 'N4', strokes: 9,
+    components: [{ c: '扌', m: 'hand', r: 'シュ' }, { c: '寺', m: 'temple', r: 'ジ' }],
+    mnemonic: 'A <span class="key">hand at the temple</span> — holding sacred items.',
+    vocab: [{ w: '持つ', r: 'もつ', m: 'to hold, have' }, { w: '気持ち', r: 'きもち', m: 'feeling' }] },
+  { char: '待', meaning: 'wait', on: 'タイ', kun: 'ま-つ', level: 'N4', strokes: 9,
+    components: [{ c: '彳', m: 'step', r: 'テキ' }, { c: '寺', m: 'temple', r: 'ジ' }],
+    mnemonic: '<span class="key">Stepping toward the temple</span> — patiently, awaiting your turn.',
+    vocab: [{ w: '待つ', r: 'まつ', m: 'to wait' }, { w: '期待', r: 'きたい', m: 'expectation' }] },
+  { char: '立', meaning: 'stand', on: 'リツ', kun: 'た-つ', level: 'N4', strokes: 5,
+    components: [{ c: '立', m: 'person standing', r: 'standalone' }],
+    mnemonic: 'A <span class="key">person standing on the ground</span> — feet planted.',
+    vocab: [{ w: '立つ', r: 'たつ', m: 'to stand' }, { w: '国立', r: 'こくりつ', m: 'national' }] },
+  { char: '歩', meaning: 'walk, step', on: 'ホ・ブ', kun: 'ある-く', level: 'N4', strokes: 8,
+    components: [{ c: '止', m: 'stop/foot', r: 'シ' }],
+    mnemonic: '<span class="key">Two feet alternating</span> — walking, step by step.',
+    vocab: [{ w: '歩く', r: 'あるく', m: 'to walk' }, { w: '散歩', r: 'さんぽ', m: 'a walk' }] },
+  { char: '走', meaning: 'run', on: 'ソウ', kun: 'はし-る', level: 'N4', strokes: 7,
+    components: [{ c: '土', m: 'earth', r: 'ド' }, { c: '足', m: 'foot', r: 'ソク' }],
+    mnemonic: 'A <span class="key">person sprinting on the earth</span>.',
+    vocab: [{ w: '走る', r: 'はしる', m: 'to run' }, { w: '競走', r: 'きょうそう', m: 'race' }] },
+  { char: '入', meaning: 'enter', on: 'ニュウ', kun: 'い-る・はい-る', level: 'N4', strokes: 2,
+    components: [{ c: '入', m: 'entering', r: 'standalone' }],
+    mnemonic: 'Two lines <span class="key">converging into one</span> — entering a doorway.',
+    vocab: [{ w: '入る', r: 'はいる', m: 'to enter' }, { w: '入口', r: 'いりぐち', m: 'entrance' }] },
+  { char: '出', meaning: 'exit, leave', on: 'シュツ', kun: 'で-る・だ-す', level: 'N4', strokes: 5,
+    components: [{ c: '出', m: 'sprout emerging', r: 'standalone' }],
+    mnemonic: 'A <span class="key">plant emerging from the ground</span> — going out.',
+    vocab: [{ w: '出る', r: 'でる', m: 'to exit' }, { w: '出口', r: 'でぐち', m: 'exit' }] },
+  { char: '開', meaning: 'open', on: 'カイ', kun: 'あ-く・ひら-く', level: 'N4', strokes: 12,
+    components: [{ c: '門', m: 'gate', r: 'モン' }, { c: '开', m: 'opening', r: '—' }],
+    mnemonic: '<span class="key">Pushing open the gate</span> with two hands.',
+    vocab: [{ w: '開く', r: 'あく', m: 'to open' }, { w: '開始', r: 'かいし', m: 'commencement' }] },
+  { char: '閉', meaning: 'close', on: 'ヘイ', kun: 'し-める・と-じる', level: 'N4', strokes: 11,
+    components: [{ c: '門', m: 'gate', r: 'モン' }, { c: '才', m: 'talent/bar', r: 'サイ' }],
+    mnemonic: '<span class="key">A bar across the gate</span> — closing it.',
+    vocab: [{ w: '閉める', r: 'しめる', m: 'to close' }, { w: '閉店', r: 'へいてん', m: 'shop closing' }] },
+  { char: '始', meaning: 'begin', on: 'シ', kun: 'はじ-める', level: 'N4', strokes: 8,
+    components: [{ c: '女', m: 'woman', r: 'ジョ' }, { c: '台', m: 'platform', r: 'ダイ' }],
+    mnemonic: '<span class="key">A woman on a platform — birth, the beginning</span>.',
+    vocab: [{ w: '始める', r: 'はじめる', m: 'to begin' }, { w: '開始', r: 'かいし', m: 'start' }] },
+  { char: '終', meaning: 'end, finish', on: 'シュウ', kun: 'お-わる', level: 'N4', strokes: 11,
+    components: [{ c: '糸', m: 'thread', r: 'シ' }, { c: '冬', m: 'winter', r: 'トウ' }],
+    mnemonic: '<span class="key">Thread ending in winter</span> — the year\'s end.',
+    vocab: [{ w: '終わる', r: 'おわる', m: 'to end' }, { w: '最終', r: 'さいしゅう', m: 'final' }] },
+  { char: '新', meaning: 'new', on: 'シン', kun: 'あたら-しい', level: 'N4', strokes: 13,
+    components: [{ c: '立', m: 'stand', r: 'リツ' }, { c: '木', m: 'tree', r: 'モク' }, { c: '斤', m: 'axe', r: 'キン' }],
+    mnemonic: '<span class="key">Cutting fresh wood with an axe</span> — new, fresh.',
+    vocab: [{ w: '新しい', r: 'あたらしい', m: 'new' }, { w: '新聞', r: 'しんぶん', m: 'newspaper' }] },
+  { char: '古', meaning: 'old', on: 'コ', kun: 'ふる-い', level: 'N4', strokes: 5,
+    components: [{ c: '十', m: 'ten', r: 'ジュウ' }, { c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: 'A <span class="key">story passed through ten generations</span> — old.',
+    vocab: [{ w: '古い', r: 'ふるい', m: 'old (not for people)' }, { w: '中古', r: 'ちゅうこ', m: 'used, second-hand' }] },
+  { char: '高', meaning: 'high, expensive', on: 'コウ', kun: 'たか-い', level: 'N4', strokes: 10,
+    components: [{ c: '高', m: 'tall tower', r: 'standalone' }],
+    mnemonic: 'A <span class="key">tall tower</span> — high, also "expensive."',
+    vocab: [{ w: '高い', r: 'たかい', m: 'high, expensive' }, { w: '高校', r: 'こうこう', m: 'high school' }] },
+  { char: '安', meaning: 'cheap, peaceful', on: 'アン', kun: 'やす-い', level: 'N4', strokes: 6,
+    components: [{ c: '宀', m: 'roof', r: '—' }, { c: '女', m: 'woman', r: 'ジョ' }],
+    mnemonic: 'A <span class="key">woman safe under a roof</span> — peaceful, secure, cheap.',
+    vocab: [{ w: '安い', r: 'やすい', m: 'cheap' }, { w: '安全', r: 'あんぜん', m: 'safety' }] },
+  { char: '長', meaning: 'long, leader', on: 'チョウ', kun: 'なが-い', level: 'N4', strokes: 8,
+    components: [{ c: '長', m: 'long hair', r: 'standalone' }],
+    mnemonic: 'An <span class="key">elder with long flowing hair and beard</span> — long, also leader.',
+    vocab: [{ w: '長い', r: 'ながい', m: 'long' }, { w: '社長', r: 'しゃちょう', m: 'company president' }] },
+  { char: '短', meaning: 'short', on: 'タン', kun: 'みじか-い', level: 'N4', strokes: 12,
+    components: [{ c: '矢', m: 'arrow', r: 'シ' }, { c: '豆', m: 'bean', r: 'トウ' }],
+    mnemonic: 'An <span class="key">arrow as short as a bean</span>.',
+    vocab: [{ w: '短い', r: 'みじかい', m: 'short' }, { w: '短期', r: 'たんき', m: 'short-term' }] },
+  { char: '広', meaning: 'wide, spacious', on: 'コウ', kun: 'ひろ-い', level: 'N4', strokes: 5,
+    components: [{ c: '广', m: 'building', r: '—' }, { c: '厶', m: 'private', r: 'シ' }],
+    mnemonic: 'A <span class="key">vast hall</span> — wide, spacious.',
+    vocab: [{ w: '広い', r: 'ひろい', m: 'wide' }, { w: '広告', r: 'こうこく', m: 'advertisement' }] },
+  { char: '近', meaning: 'near', on: 'キン', kun: 'ちか-い', level: 'N4', strokes: 7,
+    components: [{ c: '辶', m: 'road', r: '—' }, { c: '斤', m: 'axe', r: 'キン' }],
+    mnemonic: 'A <span class="key">short road, axe distance</span> — nearby.',
+    vocab: [{ w: '近い', r: 'ちかい', m: 'near' }, { w: '最近', r: 'さいきん', m: 'recently' }] },
+  { char: '遠', meaning: 'far', on: 'エン', kun: 'とお-い', level: 'N4', strokes: 13,
+    components: [{ c: '辶', m: 'road', r: '—' }, { c: '袁', m: 'long robe', r: 'エン' }],
+    mnemonic: 'A <span class="key">long road</span> — far away.',
+    vocab: [{ w: '遠い', r: 'とおい', m: 'far' }, { w: '永遠', r: 'えいえん', m: 'eternity' }] },
+  { char: '強', meaning: 'strong', on: 'キョウ', kun: 'つよ-い', level: 'N4', strokes: 11,
+    components: [{ c: '弓', m: 'bow', r: 'キュウ' }, { c: '虫', m: 'insect', r: 'チュウ' }],
+    mnemonic: 'A <span class="key">bow strong enough to kill insects</span>.',
+    vocab: [{ w: '強い', r: 'つよい', m: 'strong' }, { w: '勉強', r: 'べんきょう', m: 'studying' }] },
+  { char: '弱', meaning: 'weak', on: 'ジャク', kun: 'よわ-い', level: 'N4', strokes: 10,
+    components: [{ c: '弓', m: 'bow', r: 'キュウ' }],
+    mnemonic: 'Two <span class="key">bent, weak bows</span>.',
+    vocab: [{ w: '弱い', r: 'よわい', m: 'weak' }, { w: '弱点', r: 'じゃくてん', m: 'weak point' }] },
+  { char: '早', meaning: 'early, fast', on: 'ソウ', kun: 'はや-い', level: 'N4', strokes: 6,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }, { c: '十', m: 'ten', r: 'ジュウ' }],
+    mnemonic: 'The <span class="key">sun rising before 10 AM</span> — early.',
+    vocab: [{ w: '早い', r: 'はやい', m: 'early, fast' }, { w: '早朝', r: 'そうちょう', m: 'early morning' }] },
+  { char: '遅', meaning: 'late, slow', on: 'チ', kun: 'おそ-い', level: 'N4', strokes: 12,
+    components: [{ c: '辶', m: 'road', r: '—' }, { c: '尸', m: 'corpse', r: '—' }, { c: '羊', m: 'sheep', r: 'ヨウ' }],
+    mnemonic: 'A <span class="key">sheep on the road moving slowly</span> — late, slow.',
+    vocab: [{ w: '遅い', r: 'おそい', m: 'late, slow' }, { w: '遅刻', r: 'ちこく', m: 'tardiness' }] },
+  { char: '明', meaning: 'bright, clear', on: 'メイ・ミョウ', kun: 'あか-るい', level: 'N4', strokes: 8,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }, { c: '月', m: 'moon', r: 'ゲツ' }],
+    mnemonic: '<span class="key">Sun and moon together</span> — brightness, clarity.',
+    vocab: [{ w: '明るい', r: 'あかるい', m: 'bright' }, { w: '説明', r: 'せつめい', m: 'explanation' }] },
+  { char: '暗', meaning: 'dark', on: 'アン', kun: 'くら-い', level: 'N4', strokes: 13,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }, { c: '音', m: 'sound', r: 'オン' }],
+    mnemonic: 'The <span class="key">sun is silent — no light, no warmth</span>. Dark.',
+    vocab: [{ w: '暗い', r: 'くらい', m: 'dark' }, { w: '暗記', r: 'あんき', m: 'memorization' }] },
+  { char: '朝', meaning: 'morning', on: 'チョウ', kun: 'あさ', level: 'N4', strokes: 12,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }, { c: '月', m: 'moon', r: 'ゲツ' }],
+    mnemonic: 'The <span class="key">sun rising, moon still in sky</span> — morning.',
+    vocab: [{ w: '朝', r: 'あさ', m: 'morning' }, { w: '朝食', r: 'ちょうしょく', m: 'breakfast' }] },
+  { char: '昼', meaning: 'noon, daytime', on: 'チュウ', kun: 'ひる', level: 'N4', strokes: 9,
+    components: [{ c: '尺', m: 'measure', r: 'シャク' }, { c: '日', m: 'sun', r: 'ニチ' }],
+    mnemonic: 'The <span class="key">sun at its measured height</span> — noon.',
+    vocab: [{ w: '昼', r: 'ひる', m: 'noon, daytime' }, { w: '昼食', r: 'ちゅうしょく', m: 'lunch' }] },
+  { char: '夜', meaning: 'night', on: 'ヤ', kun: 'よる', level: 'N4', strokes: 8,
+    components: [{ c: '亠', m: 'lid', r: '—' }, { c: '夕', m: 'evening', r: 'セキ' }],
+    mnemonic: '<span class="key">After evening, under the moon</span> — night.',
+    vocab: [{ w: '夜', r: 'よる', m: 'night' }, { w: '今夜', r: 'こんや', m: 'tonight' }] },
+  { char: '春', meaning: 'spring', on: 'シュン', kun: 'はる', level: 'N4', strokes: 9,
+    components: [{ c: '日', m: 'sun', r: 'ニチ' }],
+    mnemonic: '<span class="key">Plants pushing toward the warming sun</span> — spring.',
+    vocab: [{ w: '春', r: 'はる', m: 'spring' }, { w: '青春', r: 'せいしゅん', m: 'youth' }] },
+  { char: '夏', meaning: 'summer', on: 'カ・ゲ', kun: 'なつ', level: 'N4', strokes: 10,
+    components: [{ c: '頁', m: 'page/head', r: 'ケツ' }],
+    mnemonic: 'A <span class="key">head with feet dragging in the heat</span> — summer.',
+    vocab: [{ w: '夏', r: 'なつ', m: 'summer' }, { w: '夏休み', r: 'なつやすみ', m: 'summer vacation' }] },
+  { char: '秋', meaning: 'autumn', on: 'シュウ', kun: 'あき', level: 'N4', strokes: 9,
+    components: [{ c: '禾', m: 'grain', r: 'カ' }, { c: '火', m: 'fire', r: 'カ' }],
+    mnemonic: '<span class="key">Grain burnt golden by fire</span> — autumn harvest.',
+    vocab: [{ w: '秋', r: 'あき', m: 'autumn' }, { w: '秋分', r: 'しゅうぶん', m: 'autumn equinox' }] },
+  { char: '冬', meaning: 'winter', on: 'トウ', kun: 'ふゆ', level: 'N4', strokes: 5,
+    components: [{ c: '夂', m: 'winter walk', r: '—' }],
+    mnemonic: '<span class="key">Two ice crystals at the bottom</span> — winter\'s frost.',
+    vocab: [{ w: '冬', r: 'ふゆ', m: 'winter' }, { w: '冬休み', r: 'ふゆやすみ', m: 'winter vacation' }] },
+  { char: '雪', meaning: 'snow', on: 'セツ', kun: 'ゆき', level: 'N4', strokes: 11,
+    components: [{ c: '雨', m: 'rain', r: 'ウ' }, { c: '彐', m: 'broom', r: '—' }],
+    mnemonic: '<span class="key">Rain you sweep with a broom</span> — snow.',
+    vocab: [{ w: '雪', r: 'ゆき', m: 'snow' }, { w: '大雪', r: 'おおゆき', m: 'heavy snow' }] },
+  { char: '風', meaning: 'wind, style', on: 'フウ', kun: 'かぜ', level: 'N4', strokes: 9,
+    components: [{ c: '几', m: 'table/sail', r: '—' }, { c: '虫', m: 'insect', r: 'チュウ' }],
+    mnemonic: '<span class="key">Insects carried by the wind under a sail</span>.',
+    vocab: [{ w: '風', r: 'かぜ', m: 'wind' }, { w: '台風', r: 'たいふう', m: 'typhoon' }] },
+  { char: '色', meaning: 'color', on: 'ショク・シキ', kun: 'いろ', level: 'N4', strokes: 6,
+    components: [{ c: '色', m: 'color', r: 'standalone' }],
+    mnemonic: 'A <span class="key">person bending over another</span> — passion, color.',
+    vocab: [{ w: '色', r: 'いろ', m: 'color' }, { w: '景色', r: 'けしき', m: 'scenery' }] },
+  { char: '赤', meaning: 'red', on: 'セキ・シャク', kun: 'あか', level: 'N4', strokes: 7,
+    components: [{ c: '土', m: 'earth', r: 'ド' }, { c: '灬', m: 'fire', r: 'カ' }],
+    mnemonic: '<span class="key">Earth scorched by fire</span> — red.',
+    vocab: [{ w: '赤い', r: 'あかい', m: 'red' }, { w: '赤ちゃん', r: 'あかちゃん', m: 'baby' }] },
+  { char: '青', meaning: 'blue, green', on: 'セイ・ショウ', kun: 'あお', level: 'N4', strokes: 8,
+    components: [{ c: '青', m: 'blue (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">young plant pushing up</span> — fresh blue-green color.',
+    vocab: [{ w: '青い', r: 'あおい', m: 'blue' }, { w: '青年', r: 'せいねん', m: 'youth' }] },
+  { char: '白', meaning: 'white', on: 'ハク・ビャク', kun: 'しろ-い', level: 'N4', strokes: 5,
+    components: [{ c: '白', m: 'white (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">single ray of sunlight</span> — pure white.',
+    vocab: [{ w: '白い', r: 'しろい', m: 'white' }, { w: '面白い', r: 'おもしろい', m: 'interesting' }] },
+  { char: '黒', meaning: 'black', on: 'コク', kun: 'くろ-い', level: 'N4', strokes: 11,
+    components: [{ c: '里', m: 'village', r: 'リ' }, { c: '灬', m: 'fire', r: 'カ' }],
+    mnemonic: '<span class="key">A village burned to soot</span> — black.',
+    vocab: [{ w: '黒い', r: 'くろい', m: 'black' }, { w: '黒板', r: 'こくばん', m: 'blackboard' }] },
+  { char: '料', meaning: 'fee, materials', on: 'リョウ', kun: '—', level: 'N4', strokes: 10,
+    components: [{ c: '米', m: 'rice', r: 'マイ' }, { c: '斗', m: 'measure', r: 'ト' }],
+    mnemonic: '<span class="key">Measuring out rice</span> — materials, fees.',
+    vocab: [{ w: '料理', r: 'りょうり', m: 'cooking' }, { w: '無料', r: 'むりょう', m: 'free of charge' }] },
+  { char: '理', meaning: 'reason, logic', on: 'リ', kun: '—', level: 'N4', strokes: 11,
+    components: [{ c: '王', m: 'king/jade', r: 'オウ' }, { c: '里', m: 'village', r: 'リ' }],
+    mnemonic: 'The <span class="key">logic of a king governing villages</span>.',
+    vocab: [{ w: '料理', r: 'りょうり', m: 'cooking' }, { w: '理由', r: 'りゆう', m: 'reason' }] },
+  { char: '魚', meaning: 'fish', on: 'ギョ', kun: 'さかな・うお', level: 'N4', strokes: 11,
+    components: [{ c: '魚', m: 'fish (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">fish</span> — head, body, tail. The 灬 at the bottom is the tail fin.',
+    vocab: [{ w: '魚', r: 'さかな', m: 'fish' }, { w: '金魚', r: 'きんぎょ', m: 'goldfish' }] },
+  { char: '肉', meaning: 'meat', on: 'ニク', kun: '—', level: 'N4', strokes: 6,
+    components: [{ c: '肉', m: 'meat (pictograph)', r: 'standalone' }],
+    mnemonic: 'A <span class="key">cut of meat with marbling</span>.',
+    vocab: [{ w: '肉', r: 'にく', m: 'meat' }, { w: '牛肉', r: 'ぎゅうにく', m: 'beef' }] },
+  { char: '茶', meaning: 'tea', on: 'チャ・サ', kun: '—', level: 'N4', strokes: 9,
+    components: [{ c: '艹', m: 'grass', r: 'ソウ' }, { c: '木', m: 'tree', r: 'モク' }],
+    mnemonic: 'A <span class="key">grass-like leaf from a tree</span> — tea.',
+    vocab: [{ w: 'お茶', r: 'おちゃ', m: 'tea' }, { w: '茶色', r: 'ちゃいろ', m: 'brown' }] },
+  { char: '酒', meaning: 'sake, alcohol', on: 'シュ', kun: 'さけ', level: 'N4', strokes: 10,
+    components: [{ c: '氵', m: 'water', r: 'スイ' }, { c: '酉', m: 'wine jar', r: 'ユウ' }],
+    mnemonic: '<span class="key">Water from a wine jar</span> — alcohol.',
+    vocab: [{ w: 'お酒', r: 'おさけ', m: 'alcohol' }, { w: '日本酒', r: 'にほんしゅ', m: 'sake' }] },
+  { char: '銀', meaning: 'silver', on: 'ギン', kun: '—', level: 'N4', strokes: 14,
+    components: [{ c: '金', m: 'gold/metal', r: 'キン' }, { c: '艮', m: 'stopping', r: 'コン' }],
+    mnemonic: '<span class="key">Metal that\'s second to gold</span> — silver.',
+    vocab: [{ w: '銀行', r: 'ぎんこう', m: 'bank' }, { w: '銀色', r: 'ぎんいろ', m: 'silver color' }] },
+  { char: '事', meaning: 'thing, matter', on: 'ジ', kun: 'こと', level: 'N4', strokes: 8,
+    components: [{ c: '事', m: 'affair', r: 'standalone' }],
+    mnemonic: '<span class="key">A hand holding a writing brush</span> — recording affairs.',
+    vocab: [{ w: '事', r: 'こと', m: 'thing, matter' }, { w: '仕事', r: 'しごと', m: 'work, job' }] },
+  { char: '仕', meaning: 'serve, work', on: 'シ・ジ', kun: 'つか-える', level: 'N4', strokes: 5,
+    components: [{ c: '亻', m: 'person', r: 'ジン' }, { c: '士', m: 'samurai', r: 'シ' }],
+    mnemonic: 'A <span class="key">person serving a samurai</span> — working under someone.',
+    vocab: [{ w: '仕事', r: 'しごと', m: 'work, job' }, { w: '仕方', r: 'しかた', m: 'way of doing' }] },
+  { char: '質', meaning: 'quality, substance', on: 'シツ・シチ', kun: '—', level: 'N4', strokes: 15,
+    components: [{ c: '斤', m: 'axe', r: 'キン' }, { c: '貝', m: 'shellfish/money', r: 'バイ' }],
+    mnemonic: 'Two <span class="key">axes weighing money</span> — assessing quality.',
+    vocab: [{ w: '質問', r: 'しつもん', m: 'question' }, { w: '品質', r: 'ひんしつ', m: 'quality' }] },
+  { char: '問', meaning: 'question', on: 'モン', kun: 'と-う', level: 'N4', strokes: 11,
+    components: [{ c: '門', m: 'gate', r: 'モン' }, { c: '口', m: 'mouth', r: 'コウ' }],
+    mnemonic: '<span class="key">Speaking at a gate</span> — asking a question.',
+    vocab: [{ w: '質問', r: 'しつもん', m: 'question' }, { w: '問題', r: 'もんだい', m: 'problem' }] },
+  { char: '題', meaning: 'topic, problem', on: 'ダイ', kun: '—', level: 'N4', strokes: 18,
+    components: [{ c: '是', m: 'this', r: 'ゼ' }, { c: '頁', m: 'page', r: 'ケツ' }],
+    mnemonic: '<span class="key">The topic at the top of the page</span>.',
+    vocab: [{ w: '問題', r: 'もんだい', m: 'problem' }, { w: '宿題', r: 'しゅくだい', m: 'homework' }] },
+  { char: '答', meaning: 'answer', on: 'トウ', kun: 'こた-える', level: 'N4', strokes: 12,
+    components: [{ c: '竹', m: 'bamboo', r: 'チク' }, { c: '合', m: 'fit', r: 'ゴウ' }],
+    mnemonic: '<span class="key">A bamboo writing matching the question</span> — the answer.',
+    vocab: [{ w: '答える', r: 'こたえる', m: 'to answer' }, { w: '回答', r: 'かいとう', m: 'reply' }] },
+  { char: '教', meaning: 'teach', on: 'キョウ', kun: 'おし-える', level: 'N4', strokes: 11,
+    components: [{ c: '孝', m: 'filial', r: 'コウ' }, { c: '攵', m: 'strike', r: '—' }],
+    mnemonic: '<span class="key">Striking knowledge into a child</span> — to teach (sternly).',
+    vocab: [{ w: '教える', r: 'おしえる', m: 'to teach' }, { w: '教室', r: 'きょうしつ', m: 'classroom' }] },
+  { char: '習', meaning: 'learn, practice', on: 'シュウ', kun: 'なら-う', level: 'N4', strokes: 11,
+    components: [{ c: '羽', m: 'feathers', r: 'ウ' }, { c: '白', m: 'white', r: 'ハク' }],
+    mnemonic: '<span class="key">A young bird practicing flight</span> — learning by repetition.',
+    vocab: [{ w: '習う', r: 'ならう', m: 'to learn' }, { w: '学習', r: 'がくしゅう', m: 'learning' }] },
+  { char: '英', meaning: 'England, hero', on: 'エイ', kun: '—', level: 'N4', strokes: 8,
+    components: [{ c: '艹', m: 'grass', r: 'ソウ' }, { c: '央', m: 'center', r: 'オウ' }],
+    mnemonic: 'A <span class="key">flower at the center</span> — outstanding, also "English."',
+    vocab: [{ w: '英語', r: 'えいご', m: 'English language' }, { w: '英国', r: 'えいこく', m: 'United Kingdom' }] },
+  { char: '語', meaning: 'language, word', on: 'ゴ', kun: 'かた-る', level: 'N4', strokes: 14,
+    components: [{ c: '言', m: 'speech', r: 'ゲン' }, { c: '吾', m: 'I/self', r: 'ゴ' }],
+    mnemonic: '<span class="key">Speaking my own words</span> — language.',
+    vocab: [{ w: '日本語', r: 'にほんご', m: 'Japanese language' }, { w: '単語', r: 'たんご', m: 'vocabulary word' }] },
+  { char: '文', meaning: 'sentence, writing', on: 'ブン・モン', kun: 'ふみ', level: 'N4', strokes: 4,
+    components: [{ c: '文', m: 'pattern/writing', r: 'standalone' }],
+    mnemonic: 'A <span class="key">person with an ornamented robe</span> — culture, writing.',
+    vocab: [{ w: '文', r: 'ぶん', m: 'sentence' }, { w: '文化', r: 'ぶんか', m: 'culture' }] },
+  { char: '字', meaning: 'character, letter', on: 'ジ', kun: '—', level: 'N4', strokes: 6,
+    components: [{ c: '宀', m: 'roof', r: '—' }, { c: '子', m: 'child', r: 'シ' }],
+    mnemonic: 'A <span class="key">child learning under a roof</span> — characters, writing.',
+    vocab: [{ w: '漢字', r: 'かんじ', m: 'kanji' }, { w: '文字', r: 'もじ', m: 'character, letter' }] },
+  { char: '漢', meaning: 'China, Han', on: 'カン', kun: '—', level: 'N4', strokes: 13,
+    components: [{ c: '氵', m: 'water', r: 'スイ' }, { c: '莫', m: 'do not', r: 'バク' }],
+    mnemonic: 'The <span class="key">river by which Han civilization flourished</span> — China.',
+    vocab: [{ w: '漢字', r: 'かんじ', m: 'kanji' }, { w: '漢方', r: 'かんぽう', m: 'Chinese medicine' }] }
+];
+
+// SRS: stage 0=New, 1=Learning, 2=Reviewing, 3=Familiar, 4=Known
+const SRS_INTERVALS = {
+  again: { delta: -1, hours: [0.0167] },
+  hard:  { delta: 0,  hours: [0.17, 4, 24, 72, 168] },
+  good:  { delta: +1, hours: [1, 24, 96, 336, 720] },
+  easy:  { delta: +2, hours: [4, 96, 336, 720, 2160] }
+};
+const STAGE_NAMES = ['New', 'Learning', 'Reviewing', 'Familiar', 'Known'];
+
+const nowMs = () => Date.now();
+
+function getIntervalMs(rating, stage) {
+  const cfg = SRS_INTERVALS[rating];
+  const hrs = cfg.hours[Math.min(stage, cfg.hours.length - 1)];
+  return hrs * 3600 * 1000;
+}
+
+function formatNextDue(ms) {
+  if (ms < 60000) return 'now';
+  if (ms < 3600000) return Math.round(ms / 60000) + 'm';
+  if (ms < 86400000) return Math.round(ms / 3600000) + 'h';
+  if (ms < 30 * 86400000) return Math.round(ms / 86400000) + 'd';
+  return Math.round(ms / (30 * 86400000)) + 'mo';
+}
+
+const STORAGE_KEY = 'kanjiAppState_v2';
+let state = {
+  view: 'study',
+  studyMode: 'recall',  // 'recall' (self-rated, more effective) or 'quiz' (multiple choice)
+  records: {},
+  stats: { todayDate: '', todayCount: 0, streak: 1, lastStudyDate: '', totalReviewed: 0, correct: 0 },
+  currentChar: null,
+  currentQuiz: null,
+  answered: false,
+  selectedIdx: null,
+  wasCorrect: null,
+  revealed: false,
+  cramMode: false,
+  cramQueue: [],
+  writeIdx: 0,
+  showGhost: true,
+  browseFilter: 'all'
+};
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (s) {
+      state = { ...state, ...s };
+      state.records = state.records || {};
+      state.stats = { ...state.stats, ...(s.stats || {}) };
+    }
+  } catch (e) {}
+  const today = new Date().toISOString().slice(0, 10);
+  if (state.stats.todayDate !== today) {
+    state.stats.todayDate = today;
+    state.stats.todayCount = 0;
+  }
+  KANJI.forEach(k => {
+    if (!state.records[k.char]) state.records[k.char] = { stage: 0, due: 0, totalReviews: 0, correct: 0 };
+  });
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+const NEW_CARDS_PER_SESSION = 15;  // bigger initial intake so day one isn't a dead end
+
+function getDueQueue() {
+  const now = nowMs();
+  const due = [];
+  const newOnes = [];
+  KANJI.forEach(k => {
+    const r = state.records[k.char];
+    if (r.totalReviews === 0) newOnes.push(k);
+    else if (r.due <= now) due.push({ k, due: r.due });
+  });
+  due.sort((a, b) => a.due - b.due);
+  return [...due.map(x => x.k), ...newOnes.slice(0, NEW_CARDS_PER_SESSION)];
+}
+
+function pickNext() {
+  if (state.cramMode) {
+    if (state.cramQueue.length === 0) {
+      // Rebuild a shuffled cram queue from all kanji
+      state.cramQueue = [...KANJI].sort(() => Math.random() - 0.5).map(k => k.char);
+    }
+    state.currentChar = state.cramQueue[0];
+    return KANJI.find(k => k.char === state.currentChar);
+  }
+  if (state.currentChar) {
+    const k = KANJI.find(x => x.char === state.currentChar);
+    const r = state.records[state.currentChar];
+    if (k && (r.totalReviews === 0 || r.due <= nowMs())) return k;
+  }
+  const queue = getDueQueue();
+  if (queue.length === 0) { state.currentChar = null; return null; }
+  state.currentChar = queue[0].char;
+  return queue[0];
+}
+
+function startCram() {
+  state.cramMode = true;
+  state.cramQueue = [...KANJI].sort(() => Math.random() - 0.5).map(k => k.char);
+  state.currentChar = null;
+  renderCard();
+}
+
+function exitCram() {
+  state.cramMode = false;
+  state.cramQueue = [];
+  state.currentChar = null;
+  renderCard();
+}
+
+function generateQuiz(k) {
+  const types = ['meaning'];
+  if (k.on && k.on !== '—') types.push('on');
+  if (k.kun && k.kun !== '—') types.push('kun');
+  const type = types[Math.floor(Math.random() * types.length)];
+
+  const getValue = (kanji, t) => t === 'meaning' ? kanji.meaning : (t === 'on' ? kanji.on : kanji.kun);
+  const correct = getValue(k, type);
+
+  const pool = KANJI.filter(x => x.char !== k.char)
+    .map(x => getValue(x, type))
+    .filter(v => v && v !== '—' && v !== correct);
+  const unique = [...new Set(pool)];
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+  const options = [correct, ...unique.slice(0, 3)];
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+  return { type, options, correctIdx: options.indexOf(correct) };
+}
+
+function renderCard() {
+  const inner = document.getElementById('studyCardInner');
+  const k = pickNext();
+  if (!k) {
+    inner.innerHTML = `
+      <div class="session-done">
+        <div class="sd-kanji">完</div>
+        <div class="sd-title">All caught up</div>
+        <div class="sd-sub">No reviews due right now. SRS is spacing your cards over hours and days — that's the point. Come back later, or keep practicing in Cram mode (no SRS impact).</div>
+        <button class="restart-btn" onclick="startCram()">Start Cram Session</button>
+      </div>`;
+    document.getElementById('sidebar').style.display = 'none';
+    return;
+  }
+  document.getElementById('sidebar').style.display = '';
+
+  // Render mode toggle header
+  const modeToggle = `
+    <div class="mode-toggle">
+      <button class="mt-btn ${state.studyMode === 'recall' ? 'active' : ''}" onclick="setStudyMode('recall')">
+        <span class="mt-label">Recall</span>
+        <span class="mt-sub">Self-rated · more effective</span>
+      </button>
+      <button class="mt-btn ${state.studyMode === 'quiz' ? 'active' : ''}" onclick="setStudyMode('quiz')">
+        <span class="mt-label">Quiz</span>
+        <span class="mt-sub">Multiple choice · casual</span>
+      </button>
+    </div>`;
+
+  if (state.studyMode === 'quiz') {
+    renderQuizCard(inner, k, modeToggle);
+  } else {
+    renderRecallCard(inner, k, modeToggle);
+  }
+  updateSidebar(k);
+}
+
+function setStudyMode(mode) {
+  if (state.studyMode === mode) return;
+  state.studyMode = mode;
+  state.currentChar = null;
+  state.currentQuiz = null;
+  state.answered = false;
+  state.revealed = false;
+  saveState();
+  renderCard();
+}
+
+function updateSidebar(k) {
+  const rec = state.records[k.char];
+  if (state.cramMode) {
+    document.getElementById('srsStageLabel').textContent = 'Cram (no SRS impact)';
+    document.getElementById('srsNextLabel').textContent = `${state.cramQueue.length} in queue`;
+  } else {
+    document.getElementById('srsStageLabel').textContent = `${STAGE_NAMES[rec.stage]} (stage ${rec.stage})`;
+    document.getElementById('srsNextLabel').textContent = rec.totalReviews === 0 ? 'first review' :
+      (rec.due > nowMs() ? 'in ' + formatNextDue(rec.due - nowMs()) : 'due now');
+  }
+  document.getElementById('componentsList').innerHTML = k.components.map(c => `
+    <div class="component">
+      <div class="component-kanji">${c.c}</div>
+      <div class="component-info">
+        <div class="component-meaning">${c.m}</div>
+        <div class="component-reading">${c.r}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('mnemonicText').innerHTML = k.mnemonic;
+  document.getElementById('vocabList').innerHTML = k.vocab.map(v => `
+    <div class="vocab">
+      <div class="vocab-word">${v.w}</div>
+      <div class="vocab-reading">${v.r}</div>
+      <div class="vocab-meaning">${v.m}</div>
+    </div>`).join('');
+}
+
+function renderRecallCard(inner, k, modeToggle) {
+  const queue = getDueQueue();
+  const rec = state.records[k.char];
+  inner.innerHTML = `
+    ${modeToggle}
+    <div class="card-header">
+      ${state.cramMode 
+        ? `<span style="color:var(--gold);">CRAM MODE</span><span style="cursor:pointer;color:var(--shu);" onclick="exitCram()">Exit Cram ✕</span>`
+        : `<span>Due · <span style="color:var(--ai-deep);">${queue.length}</span></span><span class="srs-stage">${STAGE_NAMES[rec.stage]}</span>`}
+      <span class="level">JLPT ${k.level}</span>
+    </div>
+    <div class="kanji-display">
+      <div class="kanji-glyph">${k.char}</div>
+      <div class="kanji-readings" id="kanjiReadings" style="display:none;">
+        <div class="reading-row"><div class="reading-label">On'yomi</div><div class="reading-value on">${k.on}</div></div>
+        <div class="reading-row"><div class="reading-label">Kun'yomi</div><div class="reading-value">${k.kun}</div></div>
+      </div>
+    </div>
+    <div class="meaning" id="meaningBlock" style="display:none;">
+      <div class="meaning-label">Meaning</div>
+      <div class="meaning-value">${k.meaning}</div>
+    </div>
+    <div class="front-prompt" id="frontPrompt">Say the meaning and readings out loud.<br><span style="font-style:normal;color:var(--ai-deep);">Then click Reveal to check.</span></div>
+    <button class="reveal-btn" id="revealBtn">Reveal <span class="kbd">SPACE</span></button>
+    <div class="rating" id="ratingPanel"></div>`;
+  state.revealed = false;
+  state.answered = false;
+  document.getElementById('sidebar').classList.add('locked');
+  document.getElementById('revealBtn').addEventListener('click', reveal);
+}
+
+function reveal() {
+  if (state.revealed || !state.currentChar) return;
+  state.revealed = true;
+  const rec = state.records[state.currentChar];
+  document.getElementById('kanjiReadings').style.display = 'flex';
+  document.getElementById('meaningBlock').style.display = 'block';
+  document.getElementById('frontPrompt').style.display = 'none';
+  document.getElementById('revealBtn').style.display = 'none';
+  const panel = document.getElementById('ratingPanel');
+  const labels = { 
+    again: { title: 'Forgot', sub: "Didn't recall" }, 
+    hard: { title: 'Hard', sub: 'Barely got it' }, 
+    good: { title: 'Good', sub: 'Recalled it' }, 
+    easy: { title: 'Easy', sub: 'Instantly' }
+  };
+  panel.innerHTML = `<div style="grid-column:1/-1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--hai);text-transform:uppercase;margin-bottom:4px;">How well did you know it? Be honest.</div>` + 
+  ['again', 'hard', 'good', 'easy'].map((r, i) => {
+    const newStage = Math.max(0, Math.min(4, rec.stage + SRS_INTERVALS[r].delta));
+    const interval = getIntervalMs(r, newStage);
+    return `<button class="rate-btn" data-rate="${r}">
+      <span class="rate-label">${i+1} · ${labels[r].title}</span>
+      <span class="rate-val">${labels[r].sub}</span>
+      <span class="rate-next">next in ${formatNextDue(interval)}</span>
+    </button>`;
+  }).join('');
+  panel.classList.add('show');
+  panel.querySelectorAll('.rate-btn').forEach(b => b.addEventListener('click', () => rateRecall(b.dataset.rate)));
+  document.getElementById('sidebar').classList.remove('locked');
+}
+
+function rateRecall(rating) {
+  if (!state.revealed || !state.currentChar) return;
+  if (state.cramMode) {
+    if (rating === 'again' || rating === 'hard') state.cramQueue.push(state.cramQueue.shift());
+    else state.cramQueue.shift();
+    state.currentChar = null;
+    state.revealed = false;
+    renderCard();
+    return;
+  }
+  const rec = state.records[state.currentChar];
+  const newStage = Math.max(0, Math.min(4, rec.stage + SRS_INTERVALS[rating].delta));
+  rec.stage = newStage;
+  rec.due = nowMs() + getIntervalMs(rating, newStage);
+  rec.totalReviews += 1;
+  const wasCorrect = rating === 'good' || rating === 'easy';
+  if (wasCorrect) rec.correct += 1;
+  state.stats.todayCount += 1;
+  state.stats.totalReviewed += 1;
+  if (wasCorrect) state.stats.correct += 1;
+  const today = new Date().toISOString().slice(0, 10);
+  if (state.stats.lastStudyDate !== today) {
+    if (state.stats.lastStudyDate) {
+      const diff = Math.round((new Date(today) - new Date(state.stats.lastStudyDate)) / 86400000);
+      if (diff === 1) state.stats.streak += 1;
+      else if (diff > 1) state.stats.streak = 1;
+    }
+    state.stats.lastStudyDate = today;
+  }
+  state.currentChar = null;
+  state.revealed = false;
+  saveState();
+  updateMeta();
+  renderCard();
+}
+
+function renderQuizCard(inner, k, modeToggle) {
+  const queue = getDueQueue();
+  const rec = state.records[k.char];
+  if (!state.currentQuiz) state.currentQuiz = generateQuiz(k);
+  const q = state.currentQuiz;
+  const questionLabel = {
+    meaning: "What does this kanji mean?",
+    on: "What is the on'yomi (Chinese-derived reading)?",
+    kun: "What is the kun'yomi (native Japanese reading)?"
+  }[q.type];
+
+  inner.innerHTML = `
+    ${modeToggle}
+    <div class="card-header">
+      ${state.cramMode 
+        ? `<span style="color:var(--gold);">CRAM MODE</span><span style="cursor:pointer;color:var(--shu);" onclick="exitCram()">Exit Cram ✕</span>`
+        : `<span>Due · <span style="color:var(--ai-deep);">${queue.length}</span></span><span class="srs-stage">${STAGE_NAMES[rec.stage]}</span>`}
+      <span class="level">JLPT ${k.level}</span>
+    </div>
+    <div class="kanji-display">
+      <div class="kanji-glyph">${k.char}</div>
+    </div>
+    <div class="quiz-prompt">${questionLabel}</div>
+    <div class="quiz-options" id="quizOptions">
+      ${q.options.map((opt, i) => `
+        <button class="quiz-btn" data-idx="${i}">
+          <span class="qb-num">${i + 1}</span>
+          <span class="qb-text">${opt}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="quiz-feedback" id="quizFeedback" style="display:none;"></div>
+    <button class="reveal-btn" id="nextBtn" style="display:none;">Next <span class="kbd">SPACE</span></button>
+  `;
+  state.answered = false;
+  state.selectedIdx = null;
+  document.getElementById('sidebar').classList.add('locked');
+  document.querySelectorAll('.quiz-btn').forEach(b => {
+    b.addEventListener('click', () => answerQuiz(parseInt(b.dataset.idx)));
+  });
+}
+
+function answerQuiz(idx) {
+  if (state.answered) return;
+  state.answered = true;
+  state.selectedIdx = idx;
+  const q = state.currentQuiz;
+  state.wasCorrect = idx === q.correctIdx;
+  const k = KANJI.find(x => x.char === state.currentChar);
+
+  document.querySelectorAll('.quiz-btn').forEach((b, i) => {
+    b.classList.add('disabled');
+    if (i === q.correctIdx) b.classList.add('correct');
+    else if (i === idx) b.classList.add('wrong');
+  });
+
+  const feedback = document.getElementById('quizFeedback');
+  feedback.style.display = 'block';
+  feedback.innerHTML = `
+    <div class="fb-status ${state.wasCorrect ? 'ok' : 'no'}">
+      ${state.wasCorrect ? '正解 · Correct' : '不正解 · Not quite'}
+    </div>
+    <div class="fb-info">
+      <div class="fb-row"><span class="fb-key">Meaning</span><span class="fb-val">${k.meaning}</span></div>
+      <div class="fb-row"><span class="fb-key">On'yomi</span><span class="fb-val on">${k.on}</span></div>
+      <div class="fb-row"><span class="fb-key">Kun'yomi</span><span class="fb-val">${k.kun}</span></div>
+    </div>
+  `;
+
+  document.getElementById('nextBtn').style.display = 'block';
+  document.getElementById('nextBtn').addEventListener('click', advance);
+  document.getElementById('sidebar').classList.remove('locked');
+}
+
+function advance() {
+  if (!state.answered || !state.currentChar) return;
+  
+  if (state.cramMode) {
+    if (!state.wasCorrect) state.cramQueue.push(state.cramQueue.shift());
+    else state.cramQueue.shift();
+    state.currentChar = null;
+    state.currentQuiz = null;
+    state.answered = false;
+    renderCard();
+    return;
+  }
+  
+  const rating = state.wasCorrect ? 'good' : 'again';
+  const rec = state.records[state.currentChar];
+  const newStage = Math.max(0, Math.min(4, rec.stage + SRS_INTERVALS[rating].delta));
+  rec.stage = newStage;
+  rec.due = nowMs() + getIntervalMs(rating, newStage);
+  rec.totalReviews += 1;
+  if (state.wasCorrect) rec.correct += 1;
+  state.stats.todayCount += 1;
+  state.stats.totalReviewed += 1;
+  if (state.wasCorrect) state.stats.correct += 1;
+  const today = new Date().toISOString().slice(0, 10);
+  if (state.stats.lastStudyDate !== today) {
+    if (state.stats.lastStudyDate) {
+      const diff = Math.round((new Date(today) - new Date(state.stats.lastStudyDate)) / 86400000);
+      if (diff === 1) state.stats.streak += 1;
+      else if (diff > 1) state.stats.streak = 1;
+    }
+    state.stats.lastStudyDate = today;
+  }
+  state.currentChar = null;
+  state.currentQuiz = null;
+  state.answered = false;
+  saveState();
+  updateMeta();
+  renderCard();
+}
+
+let canvas, ctx, drawing = false, lastX, lastY;
+
+function initCanvas() {
+  canvas = document.getElementById('writeCanvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  const start = (x, y) => { drawing = true; [lastX, lastY] = [x, y]; };
+  const move = (x, y) => {
+    if (!drawing) return;
+    ctx.strokeStyle = '#1a1614';
+    ctx.lineWidth = Math.max(8, canvas.width * 0.018);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+    [lastX, lastY] = [x, y];
+  };
+  const end = () => { drawing = false; };
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return [(t.clientX - rect.left) * (canvas.width / rect.width), (t.clientY - rect.top) * (canvas.height / rect.height)];
+  };
+  canvas.addEventListener('mousedown', e => { const [x,y] = getPos(e); start(x,y); });
+  canvas.addEventListener('mousemove', e => { const [x,y] = getPos(e); move(x,y); });
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); const [x,y] = getPos(e); start(x,y); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); const [x,y] = getPos(e); move(x,y); }, { passive: false });
+  canvas.addEventListener('touchend', e => { e.preventDefault(); end(); }, { passive: false });
+}
+
+function resizeCanvas() {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+}
+
+function clearCanvas() {
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function renderWrite() {
+  if (state.writeIdx < 0) state.writeIdx = KANJI.length - 1;
+  if (state.writeIdx >= KANJI.length) state.writeIdx = 0;
+  const k = KANJI[state.writeIdx];
+  document.getElementById('writeTargetKanji').textContent = k.char;
+  document.getElementById('writeTargetMean').textContent = k.meaning;
+  document.getElementById('ghostKanji').textContent = state.showGhost ? k.char : '';
+  document.getElementById('wmKanji').textContent = k.char;
+  document.getElementById('wmMean').textContent = k.meaning;
+  document.getElementById('wmOn').textContent = k.on;
+  document.getElementById('wmKun').textContent = k.kun;
+  document.getElementById('wmStrokes').textContent = k.strokes;
+  document.getElementById('wmLevel').textContent = k.level;
+  clearCanvas();
+}
+
+function renderBrowse() {
+  const grid = document.getElementById('browseGrid');
+  const now = nowMs();
+  let list = KANJI;
+  const f = state.browseFilter;
+  if (f === 'N5' || f === 'N4' || f === 'N3') list = KANJI.filter(k => k.level === f);
+  else if (f === 'due') list = KANJI.filter(k => { const r = state.records[k.char]; return r.totalReviews > 0 && r.due <= now; });
+  else if (f === 'new') list = KANJI.filter(k => state.records[k.char].totalReviews === 0);
+  else if (f === 'known') list = KANJI.filter(k => state.records[k.char].stage >= 3);
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="ek">空</div><div class="et">Nothing here</div><div class="es">No kanji match this filter.</div></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(k => {
+    const rec = state.records[k.char];
+    return `<div class="browse-card" data-char="${k.char}">
+      <span class="bk-srs s${rec.stage}" title="${STAGE_NAMES[rec.stage]}"></span>
+      <span class="bk-tier">${k.level}</span>
+      <span class="bk-glyph">${k.char}</span>
+      <div class="bk-mean">${k.meaning}</div>
+      <div class="bk-read">${k.on}</div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.browse-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const ch = el.dataset.char;
+      state.currentChar = ch;
+      state.records[ch].due = 0;
+      switchView('study');
+      renderCard();
+    });
+  });
+}
+
+function renderStats() {
+  const recs = Object.values(state.records);
+  const now = nowMs();
+  document.getElementById('statTotal').textContent = state.stats.totalReviewed;
+  document.getElementById('statMastered').textContent = recs.filter(r => r.stage >= 3).length;
+  document.getElementById('statDue').textContent = recs.filter(r => r.totalReviews > 0 && r.due <= now).length;
+  document.getElementById('statAccuracy').textContent = state.stats.totalReviewed > 0
+    ? Math.round((state.stats.correct / state.stats.totalReviewed) * 100) + '%' : '—';
+
+  const levels = {};
+  KANJI.forEach(k => {
+    levels[k.level] = levels[k.level] || { total: 0, started: 0 };
+    levels[k.level].total += 1;
+    if (state.records[k.char].totalReviews > 0) levels[k.level].started += 1;
+  });
+  const order = ['N5', 'N4', 'N3', 'N2', 'N1'];
+  document.getElementById('levelBreakdown').innerHTML = order.filter(l => levels[l]).map(l => {
+    const pct = levels[l].total > 0 ? (levels[l].started / levels[l].total) * 100 : 0;
+    return `<div class="level-row">
+      <div class="level-name">JLPT ${l}</div>
+      <div class="level-bar"><div class="level-bar-fill" style="transform:scaleX(${pct / 100});"></div></div>
+      <div class="level-count">${levels[l].started}/${levels[l].total}</div>
+    </div>`;
+  }).join('');
+
+  const stageCounts = [0,0,0,0,0];
+  recs.forEach(r => { stageCounts[r.stage] += 1; });
+  const intervals = ['—', '~10m', '~1d', '~1w', '~1mo+'];
+  document.getElementById('srsStages').innerHTML = stageCounts.map((c, i) => `
+    <div class="srs-stage-card s${i}">
+      <div class="ss-name">${STAGE_NAMES[i]}</div>
+      <div class="ss-count">${c}</div>
+      <div class="ss-int">${intervals[i]}</div>
+    </div>`).join('');
+}
+
+function updateMeta() {
+  const recs = Object.values(state.records);
+  const now = nowMs();
+  const dueCount = recs.filter(r => r.totalReviews > 0 && r.due <= now).length;
+  const newCount = Math.min(NEW_CARDS_PER_SESSION, recs.filter(r => r.totalReviews === 0).length);
+  const total = dueCount + newCount;
+  document.getElementById('dueCount').textContent = total;
+  document.getElementById('todayCount').textContent = state.stats.todayCount;
+  document.getElementById('streakCount').textContent = state.stats.streak;
+  const badge = document.getElementById('dueBadge');
+  badge.textContent = total;
+  badge.classList.toggle('zero', total === 0);
+}
+
+function switchView(view) {
+  state.view = view;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
+  if (view === 'study') renderCard();
+  if (view === 'write') { renderWrite(); setTimeout(resizeCanvas, 50); }
+  if (view === 'browse') renderBrowse();
+  if (view === 'stats') renderStats();
+}
+
+document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+
+document.addEventListener('keydown', (e) => {
+  if (state.view === 'study') {
+    if (state.studyMode === 'recall') {
+      if (!state.revealed && e.code === 'Space') { e.preventDefault(); reveal(); }
+      else if (state.revealed) {
+        if (e.key === '1') rateRecall('again');
+        else if (e.key === '2') rateRecall('hard');
+        else if (e.key === '3') rateRecall('good');
+        else if (e.key === '4') rateRecall('easy');
+      }
+    } else {
+      if (state.answered && e.code === 'Space') { e.preventDefault(); advance(); }
+      else if (!state.answered && ['1','2','3','4'].includes(e.key)) {
+        const idx = parseInt(e.key) - 1;
+        const btns = document.querySelectorAll('.quiz-btn');
+        if (btns[idx]) answerQuiz(idx);
+      }
+    }
+  } else if (state.view === 'write') {
+    if (e.key === 'ArrowLeft') { state.writeIdx -= 1; renderWrite(); }
+    else if (e.key === 'ArrowRight') { state.writeIdx += 1; renderWrite(); }
+    else if (e.key.toLowerCase() === 'c') clearCanvas();
+  }
+});
+
+document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
+document.getElementById('prevKanji').addEventListener('click', () => { state.writeIdx -= 1; renderWrite(); saveState(); });
+document.getElementById('nextKanji').addEventListener('click', () => { state.writeIdx += 1; renderWrite(); saveState(); });
+document.getElementById('toggleGhost').addEventListener('click', (e) => {
+  state.showGhost = !state.showGhost;
+  e.target.textContent = state.showGhost ? 'Hide Ghost' : 'Show Ghost';
+  renderWrite(); saveState();
+});
+
+document.getElementById('browseControls').addEventListener('click', (e) => {
+  if (e.target.classList.contains('filter-btn')) {
+    state.browseFilter = e.target.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === e.target));
+    renderBrowse();
+  }
+});
+
+loadState();
+initCanvas();
+renderCard();
+updateMeta();
+setInterval(updateMeta, 60000);
+</script>
+</body>
+</html>
